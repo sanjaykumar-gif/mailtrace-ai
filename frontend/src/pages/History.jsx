@@ -44,24 +44,24 @@ export default function History() {
     <div>
       <div className="page-head">
         <div>
-          <h1>Analysis History</h1>
-          <div className="sub">Every analysis persists locally and feeds campaign correlation.</div>
+          <h1>Scan History</h1>
+          <div className="sub">Past email scans and detected threat scores.</div>
         </div>
         <div className="spacer" />
-        <Link to="/analyze" className="btn btn-primary">+ Analyze Email</Link>
+        <Link to="/analyze" className="btn btn-primary">+ Scan Email</Link>
       </div>
 
       <ErrorBanner error={error} onRetry={load} />
 
       {rows.length === 0 ? (
         <div className="card">
-          <Empty title="History is empty" text="Run your first analysis to build the investigation trail.">
-            <Link className="btn btn-primary" to="/analyze">Analyze Email</Link>
+          <Empty title="No scan history" text="Scan an email to start building your threat history.">
+            <Link className="btn btn-primary" to="/analyze">Scan Email</Link>
           </Empty>
         </div>
       ) : (
         <div className="card">
-          <div className="card-title">{rows.length} Stored Analyses</div>
+          <div className="card-title">{rows.length} Scanned Emails</div>
           <div className="table-wrap">
             <table className="table">
               <thead>

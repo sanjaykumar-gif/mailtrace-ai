@@ -57,12 +57,12 @@ export default function Forensics() {
     <div>
       <div className="page-head">
         <div>
-          <h1>Email Forensics</h1>
-          <div className="sub">Full evidence extraction: identity, authentication, network route, live DNS/GeoIP, URLs, attachments and obfuscation.</div>
+          <h1>Forensics</h1>
+          <div className="sub">Detailed breakdown of headers, routing timeline, authentication, and links.</div>
         </div>
         <div className="spacer" />
         <select value={selected} onChange={(e) => change(e.target.value)} style={{ maxWidth: 420 }}>
-          {list.length === 0 && <option value="">No analyses yet</option>}
+          {list.length === 0 && <option value="">No scans yet</option>}
           {list.map((a) => (
             <option key={a.id} value={a.id}>
               [{a.classification} {a.risk_score}] {a.subject}
@@ -75,9 +75,9 @@ export default function Forensics() {
       {loading && <Loading text="Loading forensic record…" />}
 
       {!loading && !data && !error && (
-        <Empty title="Nothing to inspect"
-          text="Analyze an email first, or pick one from the selector above.">
-          <Link className="btn btn-primary" to="/analyze">Analyze Email</Link>
+        <Empty title="No email selected"
+          text="Scan an email first or choose one from the list above.">
+          <Link className="btn btn-primary" to="/analyze">Scan Email</Link>
         </Empty>
       )}
 
@@ -87,12 +87,12 @@ export default function Forensics() {
             <RiskBadge value={data.classification} />
             <span className="mono" style={{ fontWeight: 800, fontSize: 16 }}>{data.risk_score}/100</span>
             <span className="spacer" style={{ flex: 1 }} />
-            <Link className="btn btn-sm" to={`/result/${data.id}`}>Threat Analysis →</Link>
+            <Link className="btn btn-sm" to={`/result/${data.id}`}>Report →</Link>
           </div>
 
           <div className="grid grid-2">
             <div className="card">
-              <div className="card-title">Sender Information</div>
+              <div className="card-title">Sender Details</div>
               <dl className="kv">
                 <dt>From</dt>
                 <dd>{data.sender?.name && <span className="muted">{data.sender.name} </span>}
@@ -111,7 +111,7 @@ export default function Forensics() {
             </div>
 
             <div className="card">
-              <div className="card-title">Message Information</div>
+              <div className="card-title">Message Details</div>
               <dl className="kv">
                 <dt>Subject</dt><dd>{data.subject}</dd>
                 <dt>Date</dt><dd className="mono">{data.date}</dd>
@@ -126,9 +126,9 @@ export default function Forensics() {
           {(data.live_dns || data.live_ip) && (
             <div className="card section-gap">
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span>🌐 Live DNS & Network Threat Intelligence</span>
+                <span>🌐 DNS &amp; Network Intel</span>
                 <span style={{ fontSize: '0.75rem', background: '#0369a1', color: '#e0f2fe', padding: '2px 8px', borderRadius: '999px' }}>
-                  Real-time Query
+                  Live
                 </span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem' }}>
@@ -184,13 +184,13 @@ export default function Forensics() {
 
           <div className="grid grid-2 section-gap">
             <div className="card">
-              <div className="card-title">Authentication (Headers)</div>
+              <div className="card-title">Authentication</div>
               <AuthPanel auth={data.auth} />
-              <p className="disclaimer">Authentication results reported from email's Authentication-Results headers.</p>
+              <p className="disclaimer">Reported from email security headers (SPF, DKIM, DMARC).</p>
             </div>
 
             <div className="card">
-              <div className="card-title">Network Indicators</div>
+              <div className="card-title">Network Route</div>
               <dl className="kv">
                 <dt>Origin IP (est.)</dt>
                 <dd className="mono" style={{ fontWeight: 700, color: data.origin_ip ? 'var(--high)' : undefined }}>
@@ -205,12 +205,12 @@ export default function Forensics() {
           </div>
 
           <div className="card section-gap">
-            <div className="card-title">Email Route Timeline</div>
+            <div className="card-title">Route Timeline</div>
             <RouteTimeline route={data.route} originIp={data.origin_ip} originNote={data.origin_note} />
           </div>
 
           <div className="card section-gap">
-            <div className="card-title">URL Indicators</div>
+            <div className="card-title">Links in Email</div>
             <UrlTable urls={data.urls} />
           </div>
 
@@ -238,16 +238,16 @@ export default function Forensics() {
                   </table>
                 </div>
               ) : (
-                <p className="muted" style={{ fontSize: 13 }}>No attachments. Nothing was executed or opened.</p>
+                <p className="muted" style={{ fontSize: 13 }}>No attachments found.</p>
               )}
             </div>
 
             <div className="card">
-              <div className="card-title">Hidden / Obfuscated Content</div>
+              <div className="card-title">Hidden Techniques</div>
               {data.obfuscation?.length ? (
                 <>
                   <div className="banner banner-warn" style={{ marginBottom: 10 }}>
-                    <b>⚠ OBFUSCATION DETECTED</b>
+                    <b>⚠ HIDDEN PATTERNS DETECTED</b>
                   </div>
                   {data.obfuscation.map((o, i) => (
                     <div className="evidence" key={i} style={{ marginBottom: 8 }}>
@@ -261,14 +261,14 @@ export default function Forensics() {
                 </>
               ) : (
                 <p className="muted" style={{ fontSize: 13 }}>
-                  No zero-width characters, homoglyphs, hidden HTML or defanged URLs detected.
+                  No hidden characters, homoglyphs, or deceptive links found.
                 </p>
               )}
             </div>
           </div>
 
           <div className="card section-gap">
-            <div className="card-title">Body Preview (sanitized plain text)</div>
+            <div className="card-title">Email Preview</div>
             <div className="raw-pre">{data.body_preview || '(empty body)'}</div>
             <details className="raw-box mt">
               <summary>View raw headers ({data.raw_headers?.split('\n').length || 0} lines)</summary>

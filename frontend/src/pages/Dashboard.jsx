@@ -71,7 +71,7 @@ export default function Dashboard() {
       <div className="page-head">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <h1>Security Operations Dashboard</h1>
+            <h1>Security Dashboard</h1>
             <span style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -92,51 +92,51 @@ export default function Dashboard() {
                 boxShadow: isLiveActive ? '0 0 6px #22c55e' : 'none',
                 display: 'inline-block'
               }} />
-              {isLiveActive ? 'REALTIME INGESTION ACTIVE' : 'LIVE MONITOR READY'}
+              {isLiveActive ? 'LIVE MONITOR ACTIVE' : 'MONITOR READY'}
             </span>
           </div>
-          <div className="sub">From suspicious email to attack campaign — live real-time overview of analyzed evidence.</div>
+          <div className="sub">Real-time overview of scanned emails and threat campaigns.</div>
         </div>
         <div className="spacer" />
         <Link to="/live" className="btn" style={{ background: isLiveActive ? '#059669' : '#1f2937', color: '#fff' }}>
-          ⚡ Live Mailbox Watcher
+          ⚡ Live Monitor
         </Link>
         <button className="btn" onClick={resetAll} disabled={!!busy}>
-          {busy === 'reset' ? 'Clearing…' : 'Reset Data'}
+          {busy === 'reset' ? 'Clearing…' : 'Clear Data'}
         </button>
         <button className="btn" onClick={loadSamples} disabled={!!busy}>
-          {busy === 'samples' ? 'Analyzing samples…' : 'Load Demo Samples'}
+          {busy === 'samples' ? 'Loading…' : 'Load Samples'}
         </button>
-        <Link to="/analyze" className="btn btn-primary">+ Analyze Email</Link>
+        <Link to="/analyze" className="btn btn-primary">+ Scan Email</Link>
       </div>
 
       <ErrorBanner error={error} onRetry={load} />
       {notice && <div className="banner banner-ok">{notice}</div>}
 
       <div className="grid grid-4">
-        <StatCard label="EMAILS ANALYZED" value={stats?.total ?? 0} color="#22d3ee" sub="all stored analyses" />
-        <StatCard label="CRITICAL THREATS" value={stats?.critical ?? 0} color="#ff4d5e" sub="risk score 81–100" />
-        <StatCard label="HIGH RISK" value={stats?.high ?? 0} color="#ff8a3d" sub="risk score 61–80" />
-        <StatCard label="ATTACK CAMPAIGNS" value={stats?.campaigns ?? 0} color="#f6c945" sub="correlated activity" />
+        <StatCard label="SCANNED" value={stats?.total ?? 0} color="#22d3ee" sub="total emails" />
+        <StatCard label="CRITICAL" value={stats?.critical ?? 0} color="#ff4d5e" sub="score 81–100" />
+        <StatCard label="HIGH RISK" value={stats?.high ?? 0} color="#ff8a3d" sub="score 61–80" />
+        <StatCard label="CAMPAIGNS" value={stats?.campaigns ?? 0} color="#f6c945" sub="linked threats" />
       </div>
 
       <div className="section-gap grid grid-3" style={{ gridTemplateColumns: '1.9fr 1fr' }}>
         <div className="card">
           <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>Recent Analyses (Auto-updating Feed)</span>
+            <span>Recent Scans</span>
             <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--text-muted)' }}>
-              Auto-refreshes every 5s
+              Auto-refreshes
             </span>
           </div>
           {recent.length === 0 ? (
-            <Empty title="No emails analyzed yet"
-              text="Connect your live mailbox in Live Monitor, upload a .eml file, or load sample emails.">
+            <Empty title="No emails scanned yet"
+              text="Drop an email to scan, connect your inbox, or load sample tests.">
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <Link to="/live" className="btn btn-primary">
-                  Connect Live Mailbox
+                  Connect Mailbox
                 </Link>
                 <button className="btn" onClick={loadSamples} disabled={!!busy}>
-                  Load Demo Samples
+                  Load Samples
                 </button>
               </div>
             </Empty>
@@ -173,20 +173,20 @@ export default function Dashboard() {
         </div>
 
         <div className="card">
-          <div className="card-title">Threat Distribution</div>
+          <div className="card-title">Threat Breakdown</div>
           {stats?.total
             ? <ThreatChart distribution={stats.distribution} />
-            : <Empty title="No data" text="Threat distribution appears after the first analysis." />}
+            : <Empty title="No data" text="Threat levels appear after your first scan." />}
           {campaigns.length > 0 && (
             <div className="mt">
-              <div className="card-title" style={{ marginBottom: 8 }}>Active Correlated Campaigns</div>
+              <div className="card-title" style={{ marginBottom: 8 }}>Connected Campaigns</div>
               {campaigns.slice(0, 3).map((c) => (
                 <Link to={`/attack-dna/${c.id}`} key={c.id} style={{ textDecoration: 'none' }}>
-                  <div className="campaign-banner mb" style={{ padding: '12px 14px' }}>
-                    <span className="cb-icon" style={{ fontSize: 20 }}>⚠</span>
+                  <div className="campaign-banner mb" style={{ padding: '10px 12px' }}>
+                    <span className="cb-icon" style={{ fontSize: 18 }}>⚠</span>
                     <div>
                       <div className="cb-title" style={{ fontSize: 13 }}>{c.id} — {c.title}</div>
-                      <div className="cb-sub">{c.member_count} related emails · confidence {c.confidence}%</div>
+                      <div className="cb-sub">{c.member_count} emails · {c.confidence}% confidence</div>
                     </div>
                   </div>
                 </Link>

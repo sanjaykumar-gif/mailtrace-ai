@@ -9,7 +9,7 @@ function Confidence({ value }) {
   return (
     <div>
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <span className="muted" style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>CAMPAIGN CONFIDENCE</span>
+        <span className="muted" style={{ fontSize: 12, fontWeight: 700 }}>CONFIDENCE</span>
         <span style={{ fontWeight: 800, fontSize: 22, color }}>{value}%</span>
       </div>
       <div className="conf-bar mt">
@@ -59,26 +59,26 @@ export default function AttackDNA() {
     navigate(`/attack-dna/${cid}`, { replace: true })
   }
 
-  if (loading) return <Loading text="Correlating stored analyses…" />
+  if (loading) return <Loading text="Loading campaigns…" />
 
   return (
     <div>
       <div className="page-head">
         <div>
-          <h1>Attack DNA — Campaign Correlation</h1>
-          <div className="sub">Every analyzed email leaves a forensic fingerprint. MailTrace AI compares fingerprints across emails to expose coordinated activity.</div>
+          <h1>Attack Campaigns</h1>
+          <div className="sub">Detects coordinated attacks that share the same origin, links, or lure patterns.</div>
         </div>
         <div className="spacer" />
-        <Link to="/analyze" className="btn btn-primary">Analyze Email</Link>
+        <Link to="/analyze" className="btn btn-primary">Scan Email</Link>
       </div>
 
       <ErrorBanner error={error} onRetry={loadList} />
 
       {campaigns.length === 0 ? (
         <div className="card">
-          <Empty title="No attack campaigns detected yet"
-            text="Campaigns emerge when two or more analyzed emails share forensic indicators — the same IP, domain, URL infrastructure, reply-to domain, sender pattern or phishing language. Analyze the three 'campaign' demo emails (or load all samples) to see correlation in action.">
-            <Link to="/analyze" className="btn btn-primary">Analyze Related Emails</Link>
+          <Empty title="No campaigns detected yet"
+            text="Campaigns appear when multiple emails share the same IP, domain, or malicious link pattern. Scan related emails or load sample tests.">
+            <Link to="/analyze" className="btn btn-primary">Scan Emails</Link>
           </Empty>
         </div>
       ) : (
@@ -96,11 +96,11 @@ export default function AttackDNA() {
                   <span className="pill" style={{ color: 'var(--high)' }}>⚠ {c.confidence}%</span>
                 </div>
                 <div className="muted mt" style={{ fontSize: 12 }}>
-                  {c.member_count} related emails · {c.shared_indicators.length} shared indicator types
+                  {c.member_count} emails · {c.shared_indicators.length} shared indicators
                 </div>
               </button>
             ))}
-            <p className="disclaimer">Correlation thresholds: link created at ≥30 shared-indicator points; confidence is the mean pairwise score.</p>
+            <p className="disclaimer">Campaigns group emails sharing infrastructure or phishing indicators.</p>
           </div>
 
           <div>
@@ -110,7 +110,7 @@ export default function AttackDNA() {
                   <span className="cb-icon">⚠</span>
                   <div style={{ flex: 1, minWidth: 220 }}>
                     <div className="cb-title">{detail.title}</div>
-                    <div className="cb-sub">{detail.id} · {detail.member_count} related emails · detected {fmtDate(detail.created_at)}</div>
+                    <div className="cb-sub">{detail.id} · {detail.member_count} emails · detected {fmtDate(detail.created_at)}</div>
                   </div>
                   <div style={{ minWidth: 230, flex: '0 0 250px' }}>
                     <Confidence value={detail.confidence} />
@@ -118,7 +118,7 @@ export default function AttackDNA() {
                 </div>
 
                 <div className="card section-gap">
-                  <div className="card-title">Shared Indicators — the campaign's DNA</div>
+                  <div className="card-title">Shared Indicators</div>
                   <div>
                     {detail.shared_indicators.map((s, i) => (
                       <span className="shared-chip" key={i}>
@@ -131,12 +131,12 @@ export default function AttackDNA() {
                 </div>
 
                 <div className="card section-gap">
-                  <div className="card-title">Attack Infrastructure Graph</div>
+                  <div className="card-title">Attack Graph</div>
                   <CampaignGraph campaign={detail} />
                 </div>
 
                 <div className="card section-gap">
-                  <div className="card-title">Correlated Emails</div>
+                  <div className="card-title">Linked Emails</div>
                   <div className="table-wrap">
                     <table className="table">
                       <thead>

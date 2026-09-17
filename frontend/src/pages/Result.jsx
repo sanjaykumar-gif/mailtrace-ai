@@ -71,7 +71,7 @@ export default function Result() {
       <div className="page-head" style={{ flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-            <h1 style={{ margin: 0 }}>Threat Analysis Report</h1>
+            <h1 style={{ margin: 0 }}>Scan Report</h1>
             <RiskBadge value={data.classification} />
           </div>
           <div className="sub mono" style={{ fontSize: '0.85rem' }}>
@@ -104,7 +104,7 @@ export default function Result() {
               gap: '0.35rem'
             }}
           >
-            🧑‍💻 Easy / Plain English
+            🧑‍💻 Simple View
           </button>
           <button
             onClick={() => setViewMode('expert')}
@@ -122,11 +122,11 @@ export default function Result() {
               gap: '0.35rem'
             }}
           >
-            🔬 Deep Forensics
+            🔬 Technical View
           </button>
         </div>
 
-        <Link className="btn" to={`/forensics/${data.id}`}>Full Forensics →</Link>
+        <Link className="btn" to={`/forensics/${data.id}`}>Forensics →</Link>
         <Link className="btn btn-primary" to="/analyze">+ Scan Another</Link>
       </div>
 
@@ -167,15 +167,15 @@ export default function Result() {
               color: isDangerous ? '#fca5a5' : isSafe ? '#86efac' : '#fde68a'
             }}>
               {isDangerous
-                ? `SECURITY ALERT: ${data.threat_type ? data.threat_type.toUpperCase() : 'POTENTIAL THREAT'}`
+                ? (data.threat_type ? data.threat_type.toUpperCase() : 'THREAT DETECTED')
                 : isSafe
-                  ? 'LEGITIMATE & SAFE EMAIL'
-                  : 'SUSPICIOUS EMAIL DETECTED'}
+                  ? 'SAFE EMAIL'
+                  : 'SUSPICIOUS EMAIL'}
             </div>
             <div style={{ color: '#d1d5db', fontSize: '0.9rem', marginTop: '0.2rem', maxWidth: '680px' }}>
               {ex.recommended_action || (isDangerous
-                ? 'Do not click links, open attachments, or reply with credentials.'
-                : 'This email passed security checks without signs of deception.')}
+                ? 'Do not click links, open files, or share passwords.'
+                : 'Email passed security checks without signs of deception.')}
             </div>
           </div>
         </div>
@@ -207,15 +207,15 @@ export default function Result() {
           <span style={{ fontSize: '2rem' }}>⚠️</span>
           <div>
             <div style={{ fontWeight: 'bold', color: '#fbbf24', fontSize: '1rem' }}>
-              Correlated Attack Campaign Detected: {data.campaign.id} ({data.campaign.title})
+              Connected Campaign: {data.campaign.id} ({data.campaign.title})
             </div>
             <div style={{ color: '#d1d5db', fontSize: '0.85rem' }}>
-              This email shares infrastructure (IPs/domains/lures) with <strong>{data.campaign.member_count} other suspicious emails</strong> (Confidence: {data.campaign.confidence}%).
+              Linked to <strong>{data.campaign.member_count} other emails</strong> ({data.campaign.confidence}% match).
             </div>
           </div>
           <div style={{ marginLeft: 'auto' }}>
             <Link to={`/attack-dna/${data.campaign.id}`} className="btn" style={{ background: '#d97706', color: '#fff', border: 'none' }}>
-              View Attack Graph →
+              View Campaign →
             </Link>
           </div>
         </div>
@@ -227,10 +227,10 @@ export default function Result() {
           {/* Plain English "Why it was flagged" Cards */}
           <div className="card">
             <h2 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#f3f4f6', marginTop: 0, marginBottom: '0.5rem' }}>
-              💡 What We Found (Plain-English Summary)
+              💡 Key Findings
             </h2>
             <p style={{ color: '#9ca3af', fontSize: '0.875rem', marginTop: 0, marginBottom: '1.25rem' }}>
-              Here is why our security engine evaluated this message:
+              Why this email was flagged:
             </p>
 
             {reasons.length > 0 ? (
@@ -256,7 +256,7 @@ export default function Result() {
                           background: 'rgba(239, 68, 68, 0.15)',
                           color: '#f87171'
                         }}>
-                          +{r.points} Threat Points
+                          +{r.points} pts
                         </span>
                         <span style={{ fontSize: '0.75rem', color: '#9ca3af', textTransform: 'capitalize' }}>
                           [{r.group}]
@@ -290,7 +290,7 @@ export default function Result() {
                 padding: '1rem',
                 color: '#4ade80'
               }}>
-                ✓ No threat indicators found. Sender, links, and content all match legitimate patterns.
+                ✓ Clean email. Sender, links, and content look legitimate.
               </div>
             )}
           </div>
@@ -298,27 +298,27 @@ export default function Result() {
           {/* Action Recommendations Card */}
           <div className="card">
             <h2 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#f3f4f6', marginTop: 0, marginBottom: '0.75rem' }}>
-              🛡️ Recommended Action Checklist
+              🛡️ Recommended Actions
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.875rem' }}>
               {isDangerous ? (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fca5a5' }}>
-                    <span>❌</span> <strong>Do NOT click any links</strong> inside this email.
+                    <span>❌</span> <strong>Do NOT click any links</strong> in this email.
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fca5a5' }}>
-                    <span>❌</span> <strong>Do NOT open or download attachments</strong> (they could contain malware).
+                    <span>❌</span> <strong>Do NOT open or download attachments.</strong>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fca5a5' }}>
-                    <span>❌</span> <strong>Do NOT reply</strong> with passwords, OTPs, or financial information.
+                    <span>❌</span> <strong>Do NOT reply</strong> with passwords, OTPs, or private details.
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#93c5fd' }}>
-                    <span>📩</span> Mark this message as <strong>Phishing / Spam</strong> in your email app.
+                    <span>📩</span> Mark this message as <strong>Phishing / Spam</strong> in your inbox.
                   </div>
                 </>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#86efac' }}>
-                  <span>✓</span> This email looks safe to read. Exercise standard everyday caution.
+                  <span>✓</span> This email looks safe. Standard caution applies.
                 </div>
               )}
             </div>
@@ -329,18 +329,18 @@ export default function Result() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div className="grid grid-2">
             <div className="card">
-              <div className="card-title">Risk Score Gauge</div>
+              <div className="card-title">Score Gauge</div>
               <ScoreGauge score={data.risk_score} classification={data.classification}
                 probability={data.phishing_probability} threatType={data.threat_type} />
             </div>
             <div className="card">
-              <div className="card-title">Threat Score Breakdown</div>
+              <div className="card-title">Score Breakdown</div>
               <ScoreBreakdown indicators={data.indicators} />
             </div>
           </div>
 
           <div className="card">
-            <div className="card-title">Forensic Indicators ({data.indicators?.length || 0})</div>
+            <div className="card-title">Detected Indicators ({data.indicators?.length || 0})</div>
             {reasons.map((r, i) => (
               <div className="evidence" key={i}>
                 <span className="ev-check">✓</span>
@@ -356,7 +356,7 @@ export default function Result() {
           {/* Live DNS & GeoIP Block in Expert View */}
           {(data.live_dns || data.live_ip) && (
             <div className="card">
-              <div className="card-title">🌐 Live DNS & Origin Network Intelligence</div>
+              <div className="card-title">🌐 DNS &amp; Network Intelligence</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.85rem' }}>
                 {data.live_dns && (
                   <div>

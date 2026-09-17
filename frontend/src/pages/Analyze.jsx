@@ -6,30 +6,30 @@ import { ErrorBanner } from '../components/Bits.jsx'
 const SCENARIOS = [
   {
     filename: '2_phishing_credential.eml',
-    title: '🚨 PayPal Phishing Scam',
-    desc: 'Fake PayPal security alert trying to steal login passwords with look-alike domain and masked links.',
-    badge: 'CRITICAL THREAT',
+    title: '🚨 Fake PayPal Alert',
+    desc: 'Fake alert trying to steal passwords via look-alike domain and deceptive links.',
+    badge: 'CRITICAL',
     badgeColor: 'var(--critical)'
   },
   {
     filename: '3_impersonation_bec.eml',
-    title: '👔 Executive Impersonation (BEC)',
-    desc: 'Fraudster impersonating the CEO requesting an urgent wire transfer with a mismatched reply address.',
+    title: '👔 Fake CEO Wire Request',
+    desc: 'Urgent money transfer request using a mismatched reply address.',
     badge: 'HIGH RISK',
     badgeColor: 'var(--high)'
   },
   {
     filename: '4_invoice_fraud.eml',
-    title: '📄 Fake Invoice & Risky Attachment',
-    desc: 'Unsolicited invoice carrying a suspicious file attachment and shortened URLs.',
+    title: '📄 Suspicious Invoice',
+    desc: 'Fake billing invoice carrying a risky attachment and shortened link.',
     badge: 'HIGH RISK',
     badgeColor: 'var(--high)'
   },
   {
     filename: '1_safe_notice.eml',
-    title: '✅ Legitimate College Notice',
-    desc: 'Authentic student placement announcement with valid headers and legitimate links.',
-    badge: 'SAFE & CLEAN',
+    title: '✅ Safe Campus Notice',
+    desc: 'Authentic student notice with verified signatures and valid headers.',
+    badge: 'SAFE',
     badgeColor: 'var(--safe)'
   }
 ]
@@ -47,11 +47,11 @@ export default function Analyze() {
   const validateFile = (f) => {
     if (!f) return false
     if (!/\.(eml|txt|msg)$/i.test(f.name)) {
-      setError('Only .eml / .txt email files are accepted.')
+      setError('Only .eml or .txt files are accepted.')
       return false
     }
     if (f.size > 2 * 1024 * 1024) {
-      setError('File exceeds the 2 MB upload limit.')
+      setError('File must be under 2 MB.')
       return false
     }
     return true
@@ -76,10 +76,10 @@ export default function Analyze() {
 
   const submit = () => {
     if (tab === 'upload') {
-      if (!file) { setError('Please select a .eml email file first.'); return }
+      if (!file) { setError('Please select an email file first.'); return }
       runAnalysis(() => api.analyzeFile(file), 'analyze')
     } else if (tab === 'paste') {
-      if (!content.trim()) { setError('Please paste raw email headers or text first.'); return }
+      if (!content.trim()) { setError('Please paste email text first.'); return }
       runAnalysis(() => api.analyzeText(content), 'analyze')
     }
   }
@@ -88,9 +88,9 @@ export default function Analyze() {
     <div>
       <div className="page-head">
         <div>
-          <h1>Scan &amp; Investigate Email</h1>
+          <h1>Scan Email</h1>
           <div className="sub">
-            Fast, explainable threat detection. Choose a pre-loaded real-world scenario or upload your own email.
+            Pick a sample test, upload an email file, or paste raw text.
           </div>
         </div>
       </div>
@@ -104,29 +104,29 @@ export default function Analyze() {
             className={`tab ${tab === 'scenarios' ? 'active' : ''}`}
             onClick={() => setTab('scenarios')}
           >
-            ⚡ 1-Click Test Scenarios
+            ⚡ Sample Tests
           </button>
           <button
             className={`tab ${tab === 'upload' ? 'active' : ''}`}
             onClick={() => setTab('upload')}
           >
-            📁 Upload .EML File
+            📁 Upload File
           </button>
           <button
             className={`tab ${tab === 'paste' ? 'active' : ''}`}
             onClick={() => setTab('paste')}
           >
-            📋 Paste Email Text
+            📋 Paste Text
           </button>
         </div>
 
-        {/* Tab 1: 1-Click Quick Scenarios */}
+        {/* Tab 1: Quick Scenarios */}
         {tab === 'scenarios' && (
           <div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: 0, marginBottom: '1rem' }}>
-              Click any real-world email below to immediately run an explainable security investigation:
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: 0, marginBottom: '1rem' }}>
+              Choose a real-world scenario to run an instant scan:
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.85rem' }}>
               {SCENARIOS.map((sc, idx) => (
                 <div
                   key={idx}
@@ -134,19 +134,19 @@ export default function Analyze() {
                     background: 'var(--panel)',
                     border: '1px solid var(--border-soft)',
                     borderRadius: 'var(--inner-radius)',
-                    padding: '1.25rem',
+                    padding: '1.1rem',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    gap: '1rem'
+                    gap: '0.85rem'
                   }}
                 >
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
                       <span style={{
                         fontSize: '0.72rem',
                         fontWeight: 'bold',
-                        padding: '2px 8px',
+                        padding: '2px 7px',
                         borderRadius: '4px',
                         background: sc.badge.includes('CRITICAL') ? 'rgba(244, 63, 94, 0.15)' : sc.badge.includes('HIGH') ? 'rgba(251, 146, 60, 0.15)' : 'rgba(16, 185, 129, 0.15)',
                         color: sc.badgeColor
@@ -154,10 +154,10 @@ export default function Analyze() {
                         {sc.badge}
                       </span>
                     </div>
-                    <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text)', marginBottom: '0.35rem' }}>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--text)', marginBottom: '0.25rem' }}>
                       {sc.title}
                     </div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem', lineHeight: 1.4 }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', lineHeight: 1.35 }}>
                       {sc.desc}
                     </div>
                   </div>
@@ -167,15 +167,15 @@ export default function Analyze() {
                     disabled={!!busy}
                     className="btn btn-primary"
                     style={{
-                      padding: '0.55rem',
-                      fontSize: '0.85rem',
+                      padding: '0.5rem',
+                      fontSize: '0.82rem',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '0.5rem'
+                      gap: '0.4rem'
                     }}
                   >
-                    {busy === sc.filename ? 'Analyzing...' : '▶ Run Threat Scan'}
+                    {busy === sc.filename ? 'Scanning...' : '▶ Run Test'}
                   </button>
                 </div>
               ))}
@@ -203,10 +203,10 @@ export default function Analyze() {
             >
               <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📁</div>
               <div style={{ fontWeight: 'bold', color: 'var(--text)', fontSize: '1rem', marginBottom: '0.25rem' }}>
-                Drag &amp; drop an .EML file here, or click to browse
+                Drop an .EML file here, or click to browse
               </div>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                Supports standard RFC-822 email files exported from Gmail, Outlook, Thunderbird (up to 2 MB)
+                Supports Gmail, Outlook, or Thunderbird export files (up to 2 MB)
               </div>
               <input
                 ref={fileInput}
@@ -238,7 +238,7 @@ export default function Analyze() {
                   onClick={submit}
                   disabled={busy === 'analyze'}
                 >
-                  {busy === 'analyze' ? 'Scanning...' : '🚀 Start Analysis'}
+                  {busy === 'analyze' ? 'Scanning...' : '🚀 Scan File'}
                 </button>
               </div>
             )}
@@ -252,7 +252,7 @@ export default function Analyze() {
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Paste email headers or full message text here..."
-              rows={10}
+              rows={9}
               style={{
                 width: '100%',
                 padding: '0.75rem',
@@ -261,35 +261,35 @@ export default function Analyze() {
                 borderRadius: '8px',
                 color: 'var(--text)',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '0.85rem'
+                fontSize: '0.82rem'
               }}
             />
             <button
               className="btn btn-primary"
               onClick={submit}
               disabled={busy === 'analyze' || !content.trim()}
-              style={{ marginTop: '0.75rem' }}
+              style={{ marginTop: '0.65rem' }}
             >
-              {busy === 'analyze' ? 'Scanning...' : '🚀 Analyze Pasted Content'}
+              {busy === 'analyze' ? 'Scanning...' : '🚀 Scan Pasted Text'}
             </button>
           </div>
         )}
       </div>
 
-      {/* Helper Box: How to export an email */}
+      {/* Helper Box */}
       <div style={{
         background: 'var(--panel)',
         border: '1px solid var(--border-soft)',
         borderRadius: 'var(--inner-radius)',
-        padding: '1rem 1.25rem',
-        fontSize: '0.85rem',
+        padding: '0.9rem 1.15rem',
+        fontSize: '0.82rem',
         color: 'var(--text-muted)'
       }}>
-        <strong style={{ color: 'var(--text)' }}>💡 How to test your own email:</strong>
-        <div style={{ marginTop: '0.35rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <div>• <strong>Gmail:</strong> Open the email &gt; Click the 3 dots (⋮) on the right &gt; Select <em>"Download message"</em> (.eml).</div>
-          <div>• <strong>Outlook:</strong> Open the email &gt; File &gt; <em>"Save As"</em> (.eml or .msg).</div>
-          <div>• <strong>Live Mailbox:</strong> Use our <a href="/live" style={{ color: 'var(--accent)' }}>Live Monitor</a> to automatically scan incoming emails in real-time!</div>
+        <strong style={{ color: 'var(--text)' }}>💡 How to download an email file:</strong>
+        <div style={{ marginTop: '0.35rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+          <div>• <strong>Gmail:</strong> Open email &gt; Click 3 dots (⋮) &gt; <em>"Download message"</em> (.eml).</div>
+          <div>• <strong>Outlook:</strong> Open email &gt; File &gt; <em>"Save As"</em> (.eml).</div>
+          <div>• <strong>Live Inbox:</strong> Use our <a href="/live" style={{ color: 'var(--accent)' }}>Live Monitor</a> to automatically scan incoming emails.</div>
         </div>
       </div>
     </div>

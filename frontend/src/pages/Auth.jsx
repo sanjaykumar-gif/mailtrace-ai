@@ -121,12 +121,12 @@ export default function Auth() {
           <Logo size={46} />
         </div>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text)', margin: '0 0 0.4rem', letterSpacing: '-0.02em' }}>
-          {mode === 'login' ? 'Welcome to MailTrace AI' : 'Create Security Account'}
+          {mode === 'login' ? 'Welcome Back' : 'Create Account'}
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: 0 }}>
           {mode === 'login'
-            ? 'Sign in to access real-time email threat monitoring & forensics'
-            : 'Join the automated email threat investigation network'}
+            ? 'Sign in to access email scanning and live monitoring.'
+            : 'Create an account to scan emails and track threats.'}
         </p>
       </div>
 
