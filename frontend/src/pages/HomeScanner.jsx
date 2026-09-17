@@ -4,37 +4,6 @@ import { api, fmtDate } from '../services/api.js'
 import { RiskBadge } from '../components/Bits.jsx'
 import Logo from '../components/Logo.jsx'
 
-const QUICK_TESTS = [
-  {
-    filename: '2_phishing_credential.eml',
-    title: '🚨 Fake PayPal Alert',
-    badge: 'CRITICAL',
-    badgeClass: 'badge-CRITICAL',
-    desc: 'Fake login link designed to steal passwords'
-  },
-  {
-    filename: '3_impersonation_bec.eml',
-    title: '👔 Fake CEO Wire Request',
-    badge: 'HIGH RISK',
-    badgeClass: 'badge-HIGH',
-    desc: 'Urgent money transfer with hidden reply address'
-  },
-  {
-    filename: '4_invoice_fraud.eml',
-    title: '📄 Suspicious Invoice',
-    badge: 'HIGH RISK',
-    badgeClass: 'badge-HIGH',
-    desc: 'Fake billing invoice with risky link attachment'
-  },
-  {
-    filename: '1_safe_notice.eml',
-    title: '✅ Safe Campus Notice',
-    badge: 'SAFE',
-    badgeClass: 'badge-SAFE',
-    desc: 'Verified email with valid security signatures'
-  }
-]
-
 export default function HomeScanner() {
   const [file, setFile] = useState(null)
   const [dragOver, setDragOver] = useState(false)
@@ -86,12 +55,6 @@ export default function HomeScanner() {
       setFile(f)
       runScan(() => api.analyzeFile(f))
     }
-  }
-
-  const runQuickTest = (filename) => {
-    setError(null)
-    setFile({ name: filename, size: 2048 })
-    runScan(() => api.analyzeSample(filename))
   }
 
   const runPasteScan = () => {
@@ -277,57 +240,23 @@ export default function HomeScanner() {
           </div>
         )}
 
-        {/* Quick Test Scenarios */}
-        <div style={{ marginTop: '1.75rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Or try a sample test:
-            </span>
+        {/* Text Paste Option Toggle */}
+        <div style={{ marginTop: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
             <button
               onClick={() => setShowRawPaste(!showRawPaste)}
-              style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}
+              style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
             >
-              {showRawPaste ? '✕ Hide text input' : '📋 Paste text instead'}
+              {showRawPaste ? '✕ Hide text input' : '📋 Paste raw email text instead'}
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '0.65rem' }}>
-            {QUICK_TESTS.map((qt, idx) => (
-              <button
-                key={idx}
-                onClick={() => runQuickTest(qt.filename)}
-                disabled={scanning}
-                style={{
-                  background: 'var(--panel2)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '10px',
-                  padding: '0.8rem',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.3rem'
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)' }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className={`badge ${qt.badgeClass}`} style={{ fontSize: '0.68rem', padding: '1px 6px' }}>{qt.badge}</span>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-faint)' }}>Test ▶</span>
-                </div>
-                <div style={{ fontWeight: 800, fontSize: '0.86rem', color: 'var(--text)' }}>{qt.title}</div>
-                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>{qt.desc}</div>
-              </button>
-            ))}
-          </div>
-
           {showRawPaste && (
-            <div style={{ marginTop: '0.85rem', background: 'var(--panel2)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+            <div style={{ background: 'var(--panel2)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
               <textarea
                 value={pasteContent}
                 onChange={(e) => setPasteContent(e.target.value)}
-                placeholder="Paste raw email headers or message here..."
+                placeholder="Paste raw email headers or message text here..."
                 rows={4}
                 style={{
                   width: '100%',
