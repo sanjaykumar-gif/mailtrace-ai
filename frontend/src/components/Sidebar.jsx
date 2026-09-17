@@ -76,6 +76,16 @@ export default function Sidebar() {
     return () => clearInterval(t)
   }, [])
 
+  const handleDisconnectLive = async () => {
+    try {
+      await api.imapDisconnect()
+      setImapActive(false)
+      check()
+    } catch (e) {
+      console.error('Failed to disconnect live IMAP:', e)
+    }
+  }
+
   return (
     <>
       <button className="menu-toggle" onClick={() => setOpen(!open)} aria-label="menu">☰</button>
@@ -180,17 +190,39 @@ export default function Sidebar() {
         </div>
 
         <div className="sidebar-foot">
-          <div className="status-row">
-            <span className={`status-dot ${online === false ? 'off' : ''}`} />
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 12 }}>
-                Protection Engine
-              </div>
-              <div className="status-label">
-                {online === null ? 'Connecting…'
-                  : online ? (imapActive ? 'Live Ingestion Active' : 'Scanner Ready') : 'Backend Offline'}
+          <div className="status-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className={`status-dot ${online === false ? 'off' : ''}`} />
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 12 }}>
+                  Protection Engine
+                </div>
+                <div className="status-label">
+                  {online === null ? 'Connecting…'
+                    : online ? (imapActive ? 'Live Ingestion Active' : 'Scanner Ready') : 'Backend Offline'}
+                </div>
               </div>
             </div>
+
+            {imapActive && (
+              <button
+                onClick={handleDisconnectLive}
+                title="Disconnect Live Mailbox"
+                style={{
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  color: '#f87171',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: '6px',
+                  padding: '3px 7px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                🛑 Disconnect
+              </button>
+            )}
           </div>
         </div>
       </aside>
