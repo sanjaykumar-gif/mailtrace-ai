@@ -45,6 +45,9 @@ export default function LiveMonitor() {
     try {
       const s = await api.imapStatus()
       setStatus(s)
+      if (s?.username && !username) {
+        setUsername(s.username)
+      }
       setLoading(false)
     } catch (e) {
       setError(e.message)
@@ -89,9 +92,10 @@ export default function LiveMonitor() {
   const handleDisconnect = async () => {
     setSubmitting(true)
     setError(null)
+    setSuccessMsg(null)
     try {
       await api.imapDisconnect()
-      setSuccessMsg('Live monitoring stopped.')
+      setSuccessMsg('Live monitoring disconnected successfully.')
       fetchStatus()
     } catch (err) {
       setError(err.message)
@@ -147,7 +151,7 @@ export default function LiveMonitor() {
     }
   }
 
-  const isLive = status?.is_running && status?.is_connected
+  const isLive = Boolean(status?.is_connected || status?.is_running)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -172,24 +176,23 @@ export default function LiveMonitor() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.35rem',
-              padding: '0.2rem 0.55rem',
+              padding: '0.2rem 0.65rem',
               borderRadius: '999px',
-              fontSize: '0.72rem',
-              fontWeight: 600,
-              background: isLive ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-              color: isLive ? '#22c55e' : '#ef4444',
-              border: `1px solid ${isLive ? '#22c55e44' : '#ef444444'}`,
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              background: isLive ? 'rgba(34, 197, 94, 0.18)' : 'rgba(239, 68, 68, 0.18)',
+              color: isLive ? '#4ade80' : '#f87171',
+              border: `1px solid ${isLive ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
             }}>
               <span style={{
-                width: 7,
-                height: 7,
+                width: 8,
+                height: 8,
                 borderRadius: '50%',
                 background: isLive ? '#22c55e' : '#ef4444',
-                boxShadow: isLive ? '0 0 6px #22c55e' : 'none',
-                display: 'inline-block',
-                animation: isLive ? 'pulse 2s infinite' : 'none'
+                boxShadow: isLive ? '0 0 8px #22c55e' : 'none',
+                display: 'inline-block'
               }} />
-              {isLive ? 'LIVE' : 'DISCONNECTED'}
+              {isLive ? 'LIVE CONNECTED' : 'DISCONNECTED'}
             </span>
           </div>
           <p style={{ margin: 0, color: '#9ca3af', fontSize: '0.84rem' }}>
@@ -215,7 +218,7 @@ export default function LiveMonitor() {
             {simulating ? 'Simulating...' : '⚡ Test Attack'}
           </button>
 
-          {status?.is_running && (
+          {isLive && (
             <>
               <button
                 onClick={handleSyncNow}
@@ -231,7 +234,7 @@ export default function LiveMonitor() {
                   fontSize: '0.82rem'
                 }}
               >
-                {syncing ? 'Syncing...' : 'Sync Now'}
+                {syncing ? 'Syncing...' : '🔄 Sync Now'}
               </button>
               <button
                 onClick={handleDisconnect}
@@ -239,15 +242,18 @@ export default function LiveMonitor() {
                 style={{
                   padding: '0.5rem 0.9rem',
                   borderRadius: '6px',
-                  background: '#374151',
+                  background: 'rgba(239, 68, 68, 0.15)',
                   color: '#f87171',
-                  border: '1px solid #4b5563',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
                   cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: '0.82rem'
+                  fontWeight: 700,
+                  fontSize: '0.82rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem'
                 }}
               >
-                Disconnect
+                🛑 {submitting ? 'Disconnecting...' : 'Disconnect'}
               </button>
             </>
           )}
@@ -416,23 +422,45 @@ export default function LiveMonitor() {
               </span>
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              style={{
-                marginTop: '0.25rem',
-                padding: '0.65rem',
-                borderRadius: '8px',
-                background: '#10b981',
-                color: '#fff',
-                fontWeight: 'bold',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '0.86rem'
-              }}
-            >
-              {submitting ? 'Connecting...' : status?.is_running ? 'Update Connection' : '🚀 Start Monitoring'}
-            </button>
+            <div style={{ display: 'flex', gap: '0.65rem', marginTop: '0.25rem' }}>
+              <button
+                type="submit"
+                disabled={submitting}
+                style={{
+                  flex: 1,
+                  padding: '0.65rem',
+                  borderRadius: '8px',
+                  background: '#10b981',
+                  color: '#fff',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.86rem'
+                }}
+              >
+                {submitting ? 'Processing...' : isLive ? 'Update Connection' : '🚀 Start Monitoring'}
+              </button>
+
+              {isLive && (
+                <button
+                  type="button"
+                  onClick={handleDisconnect}
+                  disabled={submitting}
+                  style={{
+                    padding: '0.65rem 1rem',
+                    borderRadius: '8px',
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    color: '#f87171',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    fontSize: '0.86rem'
+                  }}
+                >
+                  🛑 Disconnect
+                </button>
+              )}
+            </div>
           </form>
         </div>
 
