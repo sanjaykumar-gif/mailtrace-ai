@@ -14,6 +14,7 @@ from .explainer import build_explanation
 from .live_dns import get_live_dns_intel, get_live_ip_intel
 from .scoring import classify, compute_score, phishing_probability
 from .threat_engine import run_detectors
+from .virustotal import check_ip_reputation, check_url_reputation, is_vt_configured
 
 MAX_INPUT_BYTES = 2 * 1024 * 1024  # 2 MB upload limit
 
@@ -44,6 +45,36 @@ def analyze_raw(raw: bytes, source: str = 'paste') -> dict:
     live_dns_data = get_live_dns_intel(sender_domain)
     origin_ip = parsed.get('origin_ip') or (parsed.get('public_ips', [None])[0] if parsed.get('public_ips') else None)
     live_ip_data = get_live_ip_intel(origin_ip) if origin_ip else None
+
+    # VirusTotal real-time intelligence (if API key is present)
+    vt_intel = {"configured": is_vt_configured(), "ip_report": None, "url_reports": []}
+    if is_vt_configured():
+        if origin_ip:
+            vt_ip = check_ip_reputation(origin_ip)
+            if vt_ip:
+                vt_intel["ip_report"] = vt_ip
+                if vt_ip.get("malicious", 0) > 0:
+                    indicators.append({
+                        'id': 'vt_malicious_ip',
+                        'group': 'reputation',
+                        'label': 'VirusTotal: Malicious Origin IP',
+                        'evidence': f"VirusTotal flagged origin IP {origin_ip} as malicious ({vt_ip['malicious']} security vendor flags).",
+                        'points': 18,
+                    })
+        for u_item in meta.get('url_analysis', [])[:3]: # query top 3 URLs
+            u_str = u_item.get('url')
+            if u_str:
+                vt_u = check_url_reputation(u_str)
+                if vt_u:
+                    vt_intel["url_reports"].append(vt_u)
+                    if vt_u.get("malicious", 0) > 0:
+                        indicators.append({
+                            'id': 'vt_malicious_url',
+                            'group': 'reputation',
+                            'label': 'VirusTotal: Malicious Embedded URL',
+                            'evidence': f"VirusTotal flagged URL {u_str} as malicious ({vt_u['malicious']} security vendor flags).",
+                            'points': 15,
+                        })
 
     # If domain has no MX in live DNS and is not a local/example domain, note indicator
     if sender_domain and not sender_domain.endswith(('.example', '.local', '.test', '.invalid')):
