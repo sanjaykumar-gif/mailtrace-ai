@@ -1,0 +1,28 @@
+Return-Path: <bounce@official-desk.top>
+Received: from mx.corp.example (mx.corp.example [172.16.10.5]) by gateway.corp.example with ESMTPS id m31xa9 for <accounts.team@corp.example>; Tue, 09 Sep 2026 14:22:10 +0530
+Received: from mta.official-desk.top (mta.official-desk.top [103.75.190.12]) by mx.corp.example with SMTP id p0dktv3 for <accounts.team@corp.example>; Tue, 09 Sep 2026 14:21:52 +0530
+From: "Priya Nair (Finance Director)" <priya.nair@nexora-finance.example>
+Reply-To: p.nair.director@official-desk.top
+To: accounts.team@corp.example
+Subject: Urgent - vendor wire transfer before 5 PM today
+Date: Tue, 09 Sep 2026 14:21:47 +0530
+Message-ID: <d118be07@mta.official-desk.top>
+Authentication-Results: mx.corp.example; spf=softfail smtp.mailfrom=nexora-finance.example; dkim=none; dmarc=none
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+
+Team,
+
+I am heading into a board meeting and need this handled right away.
+
+We must release an urgent payment to a new vendor today. Please process
+the payment of Rs 18,50,000 as a wire transfer against the outstanding
+invoice before 5 PM. I will share the bank details of the vendor account
+as soon as possible - please confirm you can act now.
+
+Treat this as confidential until the deal is announced. Do not call the
+office line, just reply to this email.
+
+Regards,
+Priya Nair
+Finance Director, Nexora Industries

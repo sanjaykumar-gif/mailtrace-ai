@@ -1,0 +1,24 @@
+Return-Path: <support@paypa1-security.example>
+Received: from mx.corp.example (mx.corp.example [172.16.10.5]) by gateway.corp.example with ESMTPS id a1sup7 for <anil.kumar@corp.example>; Tue, 09 Sep 2026 10:02:31 +0530
+Received: from mta.paypa1-security.example (unknown [185.220.101.47]) by mx.corp.example with ESMTP id uu81s2 for <anil.kumar@corp.example>; Tue, 09 Sep 2026 10:02:27 +0530
+From: "PayPal Support" <support@paypa1-security.example>
+Reply-To: noreply@paypa1-security.example
+To: anil.kumar@corp.example
+Subject: [Action Required] Verify your account within 24 hours
+Date: Tue, 09 Sep 2026 10:02:22 +0530
+Message-ID: <7d3fa192.supp@mta.paypa1-security.example>
+Authentication-Results: mx.corp.example; spf=fail smtp.mailfrom=paypa1-security.example; dkim=none; dmarc=none
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+
+Dear Customer,
+
+Our security system detected unusual activity on your account. Your
+account has been temporarily suspended and you must verify your account
+within 24 hours, otherwise access will be permanently restricted.
+
+Confirm your password and account details on our verification page:
+https://paypa1-secure.example/login/verify?uid=88412037
+
+Thank you,
+PayPal Support Team

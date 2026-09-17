@@ -1,0 +1,31 @@
+Return-Path: <placements@college.edu.example>
+Received: from mx.campus.example (mx.campus.example [10.12.4.21]) by gateway.corp.example with ESMTPS id f8a2c1 for <students@college.edu.example>; Sat, 06 Sep 2026 11:05:41 +0530
+Received: from mail-oi1-f45.college.example (mail-oi1-f45.college.example [209.85.128.45]) by mx.campus.example with ESMTP id q19mn2 for <students@college.edu.example>; Sat, 06 Sep 2026 11:05:22 +0530
+From: "Placement Cell, PSG Institute" <placements@college.edu.example>
+To: students@college.edu.example
+Subject: Placement Drive Schedule - September 2026
+Date: Sat, 06 Sep 2026 11:04:58 +0530
+Message-ID: <CABx9pL2kR=placement2026@mail-oi1-f45.college.example>
+Authentication-Results: mx.campus.example; spf=pass smtp.mailfrom=college.edu.example; dkim=pass header.d=college.edu.example; dmarc=pass(p=QUARANTINE) header.from=college.edu.example
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+Dear Students,
+
+Greetings from the Placement Cell.
+
+The on-campus placement drive schedule for September 2026 is now available
+on the institute portal. Interested final-year students are requested to
+check the company-wise slots and register through the portal before
+20 September 2026.
+
+Schedule and eligibility criteria:
+https://www.college.edu.example/placements/schedule
+
+Please carry a printed copy of your hall ticket and college ID card on the
+day of the drive.
+
+Best regards,
+Placement Cell
+PSG Institute of Technology

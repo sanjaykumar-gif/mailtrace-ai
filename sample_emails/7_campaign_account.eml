@@ -1,0 +1,24 @@
+Return-Path: <account@paypa1-security.example>
+Received: from mx.corp.example (mx.corp.example [172.16.10.5]) by gateway.corp.example with ESMTPS id c3acc9 for <suresh.r@corp.example>; Tue, 09 Sep 2026 15:44:05 +0530
+Received: from mx2.paypa1-security.example (unknown [185.220.101.52]) by mx.corp.example with ESMTP id wu73k1 for <suresh.r@corp.example>; Tue, 09 Sep 2026 15:43:58 +0530
+From: "PayPal Account Review" <account@paypa1-security.example>
+Reply-To: noreply@paypa1-security.example
+To: suresh.r@corp.example
+Subject: [Action Required] Your account is on hold - verify your account
+Date: Tue, 09 Sep 2026 15:43:52 +0530
+Message-ID: <7d3fa194.acct@mx2.paypa1-security.example>
+Authentication-Results: mx.corp.example; spf=fail smtp.mailfrom=paypa1-security.example; dkim=none; dmarc=none
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+
+Dear Customer,
+
+Due to unusual activity, your account has been temporarily suspended.
+You must verify your account within 24 hours to restore access.
+
+To unlock your account, confirm your password and verify your account
+details here:
+https://paypa1-secure.example/account/unlock?uid=88415889
+
+Thank you,
+PayPal Account Review Team

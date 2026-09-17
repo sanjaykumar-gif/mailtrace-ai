@@ -1,0 +1,24 @@
+Return-Path: <billing@paypa1-security.example>
+Received: from mx.corp.example (mx.corp.example [172.16.10.5]) by gateway.corp.example with ESMTPS id b2bil3 for <meera.i@corp.example>; Tue, 09 Sep 2026 11:17:48 +0530
+Received: from mta.paypa1-security.example (unknown [185.220.101.47]) by mx.corp.example with ESMTP id vv92t6 for <meera.i@corp.example>; Tue, 09 Sep 2026 11:17:43 +0530
+From: "PayPal Billing" <billing@paypa1-security.example>
+Reply-To: noreply@paypa1-security.example
+To: meera.i@corp.example
+Subject: [Action Required] Billing verification pending - 24 hours left
+Date: Tue, 09 Sep 2026 11:17:39 +0530
+Message-ID: <7d3fa193.bill@mta.paypa1-security.example>
+Authentication-Results: mx.corp.example; spf=fail smtp.mailfrom=paypa1-security.example; dkim=none; dmarc=none
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+
+Dear Customer,
+
+Your account has been temporarily suspended because your billing
+information could not be confirmed. You must verify your account within
+24 hours to avoid permanent restriction of services.
+
+Update your payment details and confirm your password here:
+https://paypa1-secure.example/billing/update?uid=88414412
+
+Thank you,
+PayPal Billing Team

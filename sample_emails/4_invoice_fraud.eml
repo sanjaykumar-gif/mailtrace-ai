@@ -1,0 +1,53 @@
+Return-Path: <billing@cloudserve-payments.example>
+Received: from mx.corp.example (mx.corp.example [172.16.10.5]) by gateway.corp.example with ESMTPS id c99zk2 for <raj.mehta@corp.example>; Wed, 10 Sep 2026 08:02:33 +0530
+Received: from relay.cloudserve-payments.example (relay.cloudserve-payments.example [91.215.85.14]) by mx.corp.example with ESMTP id f77bq8 for <raj.mehta@corp.example>; Wed, 10 Sep 2026 08:02:19 +0530
+From: "CloudServe Billing Desk" <billing@cloudserve-payments.example>
+Reply-To: collections@recover-debt.example
+To: raj.mehta@corp.example
+Subject: Overdue: Final invoice CS-8842 - payment required within 24 hours
+Date: Wed, 10 Sep 2026 08:02:14 +0530
+Message-ID: <cs8842-final@relay.cloudserve-payments.example>
+Authentication-Results: mx.corp.example; spf=fail smtp.mailfrom=cloudserve-payments.example; dkim=none; dmarc=none
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="CS_MIX_8842"
+
+--CS_MIX_8842
+Content-Type: multipart/alternative; boundary="CS_ALT_8842"
+
+--CS_ALT_8842
+Content-Type: text/plain; charset="UTF-8"
+
+Dear Customer,
+
+Your account shows an outstanding balance of Rs 42,300 for invoice
+CS-8842. This is the final invoice and payment of the overdue amount is
+required within 24 hours to avoid suspension of services.
+
+The invoice attached to this email contains the updated payment link.
+You can also pay online at https://tinyurl.example/inv8842
+
+CloudServe Billing Desk
+
+--CS_ALT_8842
+Content-Type: text/html; charset="UTF-8"
+
+<html><body>
+<p>Dear Customer,</p>
+<p>Your account shows an <b>outstanding balance of Rs 42,300</b> for
+invoice CS-8842. This is the final invoice and payment of the overdue
+amount is required <b>within 24 hours</b> to avoid suspension.</p>
+<p>The <b>invoice attached</b> to this email contains the updated payment
+link. You can also pay online at
+https://tinyurl.example/inv8842</p>
+<span style="display:none">ref-49z-secure-gateway-confirm-routing-x1</span>
+<p>CloudServe Billing Desk</p>
+</body></html>
+
+--CS_ALT_8842--
+--CS_MIX_8842
+Content-Type: application/octet-stream; name="invoice_8842_final.html"
+Content-Disposition: attachment; filename="invoice_8842_final.html"
+Content-Transfer-Encoding: 7bit
+
+<html><head><title>Invoice CS-8842</title></head><body><p>Loading payment gateway...</p></body></html>
+--CS_MIX_8842--
