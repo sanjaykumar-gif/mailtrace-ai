@@ -17,6 +17,7 @@ const links = [
   { to: '/dashboard', label: 'Dashboard', icon: 'M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z' },
   { to: '/forensics', label: 'Forensics', icon: 'M12 2l9 4.9v9.9L12 22l-9-5.1V6.9L12 2zm0 5v6m0 3.5v.5' },
   { to: '/attack-dna', label: 'Campaigns', icon: 'M12 2v20M4 6c2.5 2.5 5.5 2.5 8 0s5.5-2.5 8 0M4 18c2.5-2.5 5.5-2.5 8 0s5.5 2.5 8 0M7 4v16M17 4v16', badge: true },
+  { to: '/ledger', label: 'Ledger (Web3)', icon: 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71' },
   { to: '/history', label: 'History', icon: 'M3 3h18M3 9h18M3 15h12M3 21h12' },
 ]
 

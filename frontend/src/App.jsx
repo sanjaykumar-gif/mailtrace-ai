@@ -7,6 +7,7 @@ import Result from './pages/Result.jsx'
 import Forensics from './pages/Forensics.jsx'
 import AttackDNA from './pages/AttackDNA.jsx'
 import History from './pages/History.jsx'
+import LedgerExplorer from './pages/LedgerExplorer.jsx'
 import Auth from './pages/Auth.jsx'
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/forensics/:id" element={<Forensics />} />
           <Route path="/attack-dna" element={<AttackDNA />} />
           <Route path="/attack-dna/:id" element={<AttackDNA />} />
+          <Route path="/ledger" element={<LedgerExplorer />} />
           <Route path="/history" element={<History />} />
           <Route path="/login" element={<Auth />} />
           <Route path="/signup" element={<Auth />} />

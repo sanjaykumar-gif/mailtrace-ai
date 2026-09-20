@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext.jsx'
 import Logo from '../components/Logo.jsx'
 import MailScannerIllustration from '../components/MailScannerIllustration.jsx'
 import PageGuideModal from '../components/PageGuideModal.jsx'
+import BlockchainProofBadge from '../components/BlockchainProofBadge.jsx'
 
 const DEFAULT_DEMO_SAMPLES = [
   { name: '1_safe_notice.eml', label: '✅ Safe Placement Notice', threat: 'SAFE', score: 0, desc: 'Legitimate college placement notice with valid SPF/DKIM' },
@@ -710,6 +711,9 @@ export default function HomeScanner() {
               </div>
             )}
           </div>
+
+          {/* Immutable Blockchain Forensic Proof & Chain of Custody */}
+          <BlockchainProofBadge analysis={result} />
 
           {/* Action Navigation Footer */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.85rem', marginTop: '0.5rem' }}>

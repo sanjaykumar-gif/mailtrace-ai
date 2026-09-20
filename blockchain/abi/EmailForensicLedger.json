@@ -1,0 +1,94 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "bytes32", "name": "emailHash", "type": "bytes32" },
+      { "indexed": false, "internalType": "string", "name": "senderDomain", "type": "string" },
+      { "indexed": false, "internalType": "uint8", "name": "riskScore", "type": "uint8" },
+      { "indexed": false, "internalType": "string", "name": "classification", "type": "string" },
+      { "indexed": true, "internalType": "uint256", "name": "timestamp", "type": "uint256" },
+      { "indexed": true, "internalType": "address", "name": "analyst", "type": "address" },
+      { "indexed": false, "internalType": "string", "name": "attackCampaignId", "type": "string" }
+    ],
+    "name": "EvidenceAnchored",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "bytes32", "name": "emailHash", "type": "bytes32" },
+      { "indexed": false, "internalType": "bool", "name": "exists", "type": "bool" },
+      { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" },
+      { "indexed": false, "internalType": "address", "name": "verifiedBy", "type": "address" }
+    ],
+    "name": "EvidenceVerified",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      { "internalType": "bytes32", "name": "_emailHash", "type": "bytes32" },
+      { "internalType": "string", "name": "_senderDomain", "type": "string" },
+      { "internalType": "uint8", "name": "_riskScore", "type": "uint8" },
+      { "internalType": "string", "name": "_classification", "type": "string" },
+      { "internalType": "string", "name": "_attackCampaignId", "type": "string" }
+    ],
+    "name": "anchorEvidence",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "bytes32", "name": "_emailHash", "type": "bytes32" }],
+    "name": "getEvidence",
+    "outputs": [
+      {
+        "components": [
+          { "internalType": "bytes32", "name": "emailHash", "type": "bytes32" },
+          { "internalType": "string", "name": "senderDomain", "type": "string" },
+          { "internalType": "uint8", "name": "riskScore", "type": "uint8" },
+          { "internalType": "string", "name": "classification", "type": "string" },
+          { "internalType": "uint256", "name": "blockTimestamp", "type": "uint256" },
+          { "internalType": "uint256", "name": "blockNumber", "type": "uint256" },
+          { "internalType": "address", "name": "forensicAnalyst", "type": "address" },
+          { "internalType": "string", "name": "attackCampaignId", "type": "string" }
+        ],
+        "internalType": "struct EmailForensicLedger.Evidence",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTotalAnchored",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "bytes32", "name": "_emailHash", "type": "bytes32" }],
+    "name": "verifyEvidence",
+    "outputs": [
+      { "internalType": "bool", "name": "exists", "type": "bool" },
+      {
+        "components": [
+          { "internalType": "bytes32", "name": "emailHash", "type": "bytes32" },
+          { "internalType": "string", "name": "senderDomain", "type": "string" },
+          { "internalType": "uint8", "name": "riskScore", "type": "uint8" },
+          { "internalType": "string", "name": "classification", "type": "string" },
+          { "internalType": "uint256", "name": "blockTimestamp", "type": "uint256" },
+          { "internalType": "uint256", "name": "blockNumber", "type": "uint256" },
+          { "internalType": "address", "name": "forensicAnalyst", "type": "address" },
+          { "internalType": "string", "name": "attackCampaignId", "type": "string" }
+        ],
+        "internalType": "struct EmailForensicLedger.Evidence",
+        "name": "evidence",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

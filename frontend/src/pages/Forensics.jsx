@@ -6,6 +6,7 @@ import AuthPanel from '../components/AuthPanel.jsx'
 import UrlTable from '../components/UrlTable.jsx'
 import RouteTimeline from '../components/RouteTimeline.jsx'
 import PageGuideModal from '../components/PageGuideModal.jsx'
+import BlockchainProofBadge from '../components/BlockchainProofBadge.jsx'
 
 export default function Forensics() {
   const { id } = useParams()
@@ -150,6 +151,9 @@ export default function Forensics() {
               </dl>
             </div>
           </div>
+
+          {/* Immutable Blockchain Forensic Proof & Chain of Custody */}
+          <BlockchainProofBadge analysis={data} />
 
           {/* Real-time Live DNS & GeoIP Intelligence Card */}
           {(data.live_dns || data.live_ip) && (
