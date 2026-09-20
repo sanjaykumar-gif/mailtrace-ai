@@ -4,23 +4,47 @@
 
 const BASE = (import.meta.env.VITE_API_BASE || '/api').replace(/\/$/, '')
 
-async function req(path, { method = 'GET', json, form } = {}) {
+async function req(path, { method = 'GET', json, form, timeoutMs = 25000 } = {}) {
   let res
-  const opts = { method, headers: {} }
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  const opts = { method, headers: {}, signal: controller.signal }
+
   if (json !== undefined) {
     opts.headers['Content-Type'] = 'application/json'
     opts.body = JSON.stringify(json)
   } else if (form) {
     opts.body = form
   }
+
   try {
     res = await fetch(BASE + path, opts)
   } catch (e) {
+    clearTimeout(timer)
+    if (e.name === 'AbortError') {
+      throw new ApiError(
+        'Request timed out. The cloud backend server might be waking up from sleep (Render cold start takes ~30s). Please retry in a few moments.',
+        408
+      )
+    }
     throw new ApiError(
-      'Cannot reach the MailTrace AI backend. Make sure it is running ' +
-      '(uvicorn on port 8000) — rule-based analysis is unavailable offline.',
-      0)
+      'Cannot reach the MailTrace AI backend. Make sure the backend server is running ' +
+      'or that VITE_API_BASE is set to your deployed backend URL in Vercel.',
+      0
+    )
+  } finally {
+    clearTimeout(timer)
   }
+
+  const contentType = res.headers.get('content-type') || ''
+  if (!contentType.includes('application/json')) {
+    // If Vercel rewrote /api/ to /index.html because backend URL is missing
+    throw new ApiError(
+      'Backend returned HTML instead of JSON. If deployed on Vercel, please ensure VITE_API_BASE is set to your live backend URL (e.g. https://your-backend.onrender.com/api) in Vercel Project Settings > Environment Variables.',
+      res.status
+    )
+  }
+
   if (!res.ok) {
     let detail = `Request failed (${res.status})`
     try {
