@@ -1,9 +1,10 @@
 """
-Live DNS & Threat Intelligence Resolver for MailTrace AI.
+MailTrace AI — Live DNS & Threat Intelligence Resolver.
 
-Performs real-time DNS queries for SPF, DMARC, MX records,
+Performs real-time DNS queries for SPF, DMARC, and MX records,
 and queries IP Geolocation / ASN intelligence for sending servers.
-Designed to be fast, non-blocking with tight timeouts and safe fallbacks.
+Designed to be fast, non-blocking with tight timeouts, thread-safe LRU caching,
+and resilient error fallbacks.
 """
 
 from __future__ import annotations
@@ -12,26 +13,32 @@ import json
 import logging
 import urllib.request
 import urllib.error
+from functools import lru_cache
 import dns.resolver
 
-logger = logging.getLogger('mailtrace.live_dns')
+from ..core.logging import logger
 
 DNS_TIMEOUT = 2.5  # seconds
 
-resolver = dns.resolver.Resolver()
-resolver.lifetime = DNS_TIMEOUT
-resolver.timeout = DNS_TIMEOUT
+
+def _get_resolver() -> dns.resolver.Resolver:
+    res = dns.resolver.Resolver()
+    res.lifetime = DNS_TIMEOUT
+    res.timeout = DNS_TIMEOUT
+    return res
 
 
+@lru_cache(maxsize=1024)
 def get_live_dns_intel(domain: str) -> dict:
     """
-    Perform live DNS checks on the domain:
+    Perform live DNS checks on the domain with LRU caching:
     - MX records check (is the domain able to receive emails?)
     - SPF TXT record (v=spf1...)
     - DMARC TXT record (_dmarc.<domain>)
     """
     if not domain or '.' not in domain:
         return {
+            'domain': domain or '',
             'has_mx': False,
             'mx_records': [],
             'spf_record': None,
@@ -50,6 +57,8 @@ def get_live_dns_intel(domain: str) -> dict:
         'dmarc_policy': 'NONE',
         'status': 'resolved'
     }
+
+    resolver = _get_resolver()
 
     # 1. MX check
     try:
@@ -92,31 +101,38 @@ def get_live_dns_intel(domain: str) -> dict:
     return intel
 
 
+@lru_cache(maxsize=1024)
 def get_live_ip_intel(ip: str) -> dict:
     """
     Fetches real-time Geolocation, Country, ISP, and ASN for a public IP address.
+    Cached in memory to eliminate redundant external queries.
     """
-    if not ip or ip.startswith(('10.', '192.168.', '172.16.', '127.')):
-        return {'ip': ip, 'is_private': True, 'country': 'Local / Private Network'}
+    if not ip or ip.startswith(('10.', '192.168.', '172.16.', '127.', 'fc00:', 'fe80:')):
+        return {'ip': ip or '127.0.0.1', 'is_private': True, 'country': 'Local / Private Network'}
 
-    url = f'http://ip-api.com/json/{ip}?fields=status,message,country,countryCode,regionName,city,isp,org,as,query'
+    ip = ip.strip()
     try:
-        req = urllib.request.Request(url, headers={'User-Agent': 'MailTraceAI-LiveEngine/1.0'})
-        with urllib.request.urlopen(req, timeout=2.0) as resp:
-            data = json.loads(resp.read().decode('utf-8'))
-            if data.get('status') == 'success':
-                return {
-                    'ip': ip,
-                    'is_private': False,
-                    'country': data.get('country', 'Unknown'),
-                    'country_code': data.get('countryCode', ''),
-                    'city': data.get('city', ''),
-                    'region': data.get('regionName', ''),
-                    'isp': data.get('isp', ''),
-                    'asn': data.get('as', ''),
-                    'org': data.get('org', ''),
-                }
+        url = f'http://ip-api.com/json/{ip}?fields=status,message,country,countryCode,regionName,city,zip,lat,lon,timezone,isp,org,as,query'
+        req = urllib.request.Request(url, headers={'User-Agent': 'MailTrace-AI-ThreatEngine/1.0'})
+        with urllib.request.urlopen(req, timeout=3.0) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode('utf-8'))
+                if data.get('status') == 'success':
+                    return {
+                        'ip': ip,
+                        'is_private': False,
+                        'country': data.get('country', 'Unknown'),
+                        'country_code': data.get('countryCode', ''),
+                        'city': data.get('city', ''),
+                        'region': data.get('regionName', ''),
+                        'isp': data.get('isp', ''),
+                        'org': data.get('org', ''),
+                        'as': data.get('as', ''),
+                        'lat': data.get('lat'),
+                        'lon': data.get('lon'),
+                        'status': 'resolved'
+                    }
     except Exception as exc:
-        logger.debug(f'GeoIP lookup error for {ip}: {exc}')
+        logger.debug(f"[LiveDNS] GeoIP lookup failed for {ip}: {exc}")
 
-    return {'ip': ip, 'is_private': False, 'country': 'Public Network', 'isp': 'Unknown ISP'}
+    return {'ip': ip, 'is_private': False, 'country': 'Public Network (Unresolved)', 'status': 'lookup_timeout'}

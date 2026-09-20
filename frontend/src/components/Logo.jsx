@@ -1,200 +1,164 @@
 import React from 'react'
 
-export default function Logo({ size = 32, showText = true, className = '' }) {
-  // Unique ID prefix to avoid SVG filter/gradient collisions when multiple logos render
-  const uid = React.useId?.() || 'mt'
-  const id = (n) => `${uid}-${n}`
+export default function Logo({ size = 34, showText = true, className = '', subtitle = 'Threat Intelligence' }) {
+  const uid = React.useId?.() || 'mt-logo'
+  const id = (name) => `${uid}-${name}`
 
   return (
     <div
       className={`logo-container ${className}`}
-      style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', userSelect: 'none' }}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '12px',
+        userSelect: 'none',
+        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+      }}
     >
-      {/* MailTrace AI — Shield + Neural-Core + Envelope Emblem */}
+      {/* MailTrace AI — Cybernetic Shield & Origami Neural Mail Emblem */}
       <svg
         width={size}
         height={size}
         viewBox="0 0 64 64"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        style={{ flexShrink: 0 }}
+        style={{
+          flexShrink: 0,
+          filter: 'drop-shadow(0 4px 16px rgba(56, 189, 248, 0.4))'
+        }}
       >
         <defs>
-          {/* Shield body gradient — cyan-to-teal */}
-          <linearGradient id={id('shieldBody')} x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+          {/* Main Shield Outer Gradient (Deep Cobalt to Electric Cyan & Mint) */}
+          <linearGradient id={id('outerShield')} x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
             <stop offset="0%" stopColor="#38bdf8" />
-            <stop offset="45%" stopColor="#0ea5e9" />
-            <stop offset="100%" stopColor="#14b8a6" />
+            <stop offset="35%" stopColor="#0ea5e9" />
+            <stop offset="70%" stopColor="#2563eb" />
+            <stop offset="100%" stopColor="#10b981" />
           </linearGradient>
 
-          {/* Inner dark panel */}
-          <linearGradient id={id('innerPanel')} x1="14" y1="12" x2="50" y2="52" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#0f2035" />
-            <stop offset="100%" stopColor="#0c1a2e" />
+          {/* Inner Dark Glass Bevel */}
+          <linearGradient id={id('innerBevel')} x1="12" y1="10" x2="52" y2="54" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#0b1329" />
+            <stop offset="100%" stopColor="#060913" />
           </linearGradient>
 
-          {/* Neural core glow */}
-          <radialGradient id={id('coreGlow')} cx="32" cy="32" r="12" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.6" />
-            <stop offset="60%" stopColor="#0ea5e9" stopOpacity="0.15" />
+          {/* Mail Wings Gradient */}
+          <linearGradient id={id('mailWings')} x1="16" y1="20" x2="48" y2="44" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#38bdf8" />
+            <stop offset="100%" stopColor="#0284c7" />
+          </linearGradient>
+
+          {/* Glowing Radar Pulse Gradient */}
+          <radialGradient id={id('pulseGlow')} cx="32" cy="31" r="16" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.9" />
+            <stop offset="50%" stopColor="#0ea5e9" stopOpacity="0.25" />
             <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0" />
           </radialGradient>
 
-          {/* Outer glow filter */}
-          <filter id={id('outerGlow')} x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
-            <feFlood floodColor="#38bdf8" floodOpacity="0.5" />
-            <feComposite in2="blur" operator="in" />
+          {/* Laser Glow Filter */}
+          <filter id={id('laserFilter')} x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2.2" result="blur" />
             <feMerge>
-              <feMergeNode />
+              <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
-
-          {/* Drop-shadow for shield */}
-          <filter id={id('shieldShadow')} x="-20%" y="-10%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#0284c7" floodOpacity="0.55" />
-          </filter>
         </defs>
 
-        {/* === OUTER SHIELD === */}
+        {/* 1. Outer Hexagonal Cyber Shield */}
         <path
-          d="M32 4L8 13V28C8 42 18.5 53.5 32 58C45.5 53.5 56 42 56 28V13L32 4Z"
-          fill={`url(#${id('shieldBody')})`}
-          filter={`url(#${id('shieldShadow')})`}
+          d="M32 3L8 12.5V28.5C8 43.5 19 55.5 32 60.5C45 55.5 56 43.5 56 28.5V12.5L32 3Z"
+          fill={`url(#${id('outerShield')})`}
         />
 
-        {/* === INNER DARK PANEL (beveled inset) === */}
+        {/* 2. Inner Dark Beveled Aegis */}
         <path
-          d="M32 8L12.5 15.5V27C12.5 39.2 21.2 49.5 32 53.2C42.8 49.5 51.5 39.2 51.5 27V15.5L32 8Z"
-          fill={`url(#${id('innerPanel')})`}
-          stroke="rgba(56,189,248,0.35)"
-          strokeWidth="0.8"
+          d="M32 6.5L11.5 14.8V27.8C11.5 40.8 20.8 51.5 32 56C43.2 51.5 52.5 40.8 52.5 27.8V14.8L32 6.5Z"
+          fill={`url(#${id('innerBevel')})`}
+          stroke="rgba(56, 189, 248, 0.45)"
+          strokeWidth="0.9"
         />
 
-        {/* === CIRCUIT TRACES (left side) === */}
-        <g stroke="#14b8a6" strokeWidth="0.9" strokeLinecap="round" opacity="0.55">
-          <path d="M17 22H22V28" />
-          <path d="M17 36H20L22 38" />
-          <path d="M19 28H16" />
-          <circle cx="16" cy="22" r="1.2" fill="#14b8a6" />
-          <circle cx="16" cy="28" r="1" fill="#14b8a6" />
-          <circle cx="22" cy="38" r="1" fill="#14b8a6" />
+        {/* 3. Ambient Neural Core Glow */}
+        <circle cx="32" cy="31" r="15" fill={`url(#${id('pulseGlow')})`} />
+
+        {/* 4. Circuit Traces & Forensic Grid */}
+        <g stroke="#10b981" strokeWidth="1" strokeLinecap="round" opacity="0.6">
+          <path d="M15 22H20V26" />
+          <path d="M15 36H18L21 39" />
+          <circle cx="15" cy="22" r="1.3" fill="#10b981" />
+          <circle cx="21" cy="39" r="1.3" fill="#10b981" />
+          <path d="M49 22H44V26" />
+          <path d="M49 36H46L43 39" />
+          <circle cx="49" cy="22" r="1.3" fill="#10b981" />
+          <circle cx="43" cy="39" r="1.3" fill="#10b981" />
         </g>
 
-        {/* === CIRCUIT TRACES (right side) === */}
-        <g stroke="#14b8a6" strokeWidth="0.9" strokeLinecap="round" opacity="0.55">
-          <path d="M47 22H42V28" />
-          <path d="M47 36H44L42 38" />
-          <path d="M45 28H48" />
-          <circle cx="48" cy="22" r="1.2" fill="#14b8a6" />
-          <circle cx="48" cy="28" r="1" fill="#14b8a6" />
-          <circle cx="42" cy="38" r="1" fill="#14b8a6" />
-        </g>
-
-        {/* === ENVELOPE FLAP (V shape — the mail motif) === */}
+        {/* 5. Aerodynamic Geometric Origami Mail Wings */}
         <path
-          d="M20 20L32 30L44 20"
+          d="M18 20L32 32L46 20"
           stroke="#38bdf8"
-          strokeWidth="2.4"
+          strokeWidth="2.6"
           strokeLinecap="round"
           strokeLinejoin="round"
-          opacity="0.85"
+          filter={`url(#${id('laserFilter')})`}
         />
-        {/* Envelope side edges */}
         <path
-          d="M20 20V40H44V20"
-          stroke="#38bdf8"
+          d="M18 20V40C18 41 19 42 20 42H44C45 42 46 41 46 40V20"
+          stroke="rgba(56, 189, 248, 0.35)"
           strokeWidth="1.6"
           strokeLinecap="round"
           strokeLinejoin="round"
-          opacity="0.35"
           fill="none"
         />
 
-        {/* === NEURAL NETWORK CORE (central AI sphere) === */}
-        {/* Ambient glow behind */}
-        <circle cx="32" cy="32" r="12" fill={`url(#${id('coreGlow')})`} />
-
-        {/* Network connections */}
-        <g stroke="#22d3ee" strokeWidth="0.8" opacity="0.7">
-          {/* Hexagonal web of lines */}
-          <line x1="32" y1="25" x2="37" y2="28" />
-          <line x1="37" y1="28" x2="37" y2="34" />
-          <line x1="37" y1="34" x2="32" y2="37" />
-          <line x1="32" y1="37" x2="27" y2="34" />
-          <line x1="27" y1="34" x2="27" y2="28" />
-          <line x1="27" y1="28" x2="32" y2="25" />
-          {/* Cross links */}
-          <line x1="32" y1="25" x2="32" y2="37" />
-          <line x1="27" y1="28" x2="37" y2="34" />
-          <line x1="37" y1="28" x2="27" y2="34" />
-          {/* Outer spokes */}
-          <line x1="32" y1="25" x2="32" y2="21" />
-          <line x1="37" y1="28" x2="40" y2="26" />
-          <line x1="37" y1="34" x2="40" y2="36" />
-          <line x1="32" y1="37" x2="32" y2="41" />
-          <line x1="27" y1="34" x2="24" y2="36" />
-          <line x1="27" y1="28" x2="24" y2="26" />
+        {/* 6. Forensic Crosshair & Central AI Beacon */}
+        <g stroke="#38bdf8" strokeWidth="1.2" opacity="0.85">
+          <line x1="32" y1="21" x2="32" y2="41" />
+          <line x1="22" y1="31" x2="42" y2="31" />
+          <circle cx="32" cy="31" r="5" fill="none" stroke="#22d3ee" strokeWidth="1.2" strokeDasharray="3 2" />
         </g>
 
-        {/* Network nodes */}
-        <g filter={`url(#${id('outerGlow')})`}>
-          <circle cx="32" cy="25" r="1.8" fill="#38bdf8" />
-          <circle cx="37" cy="28" r="1.5" fill="#38bdf8" />
-          <circle cx="37" cy="34" r="1.5" fill="#38bdf8" />
-          <circle cx="32" cy="37" r="1.8" fill="#38bdf8" />
-          <circle cx="27" cy="34" r="1.5" fill="#38bdf8" />
-          <circle cx="27" cy="28" r="1.5" fill="#38bdf8" />
-          {/* Outer nodes */}
-          <circle cx="32" cy="21" r="1.2" fill="#22d3ee" />
-          <circle cx="40" cy="26" r="1.2" fill="#22d3ee" />
-          <circle cx="40" cy="36" r="1.2" fill="#22d3ee" />
-          <circle cx="32" cy="41" r="1.2" fill="#22d3ee" />
-          <circle cx="24" cy="36" r="1.2" fill="#22d3ee" />
-          <circle cx="24" cy="26" r="1.2" fill="#22d3ee" />
-        </g>
-
-        {/* Central bright core */}
-        <circle cx="32" cy="31" r="3" fill="#0ea5e9" opacity="0.5" />
-        <circle cx="32" cy="31" r="1.8" fill="#ffffff" opacity="0.9" />
+        {/* 7. High-Luminance Center Spark */}
+        <circle cx="32" cy="31" r="2.8" fill="#38bdf8" filter={`url(#${id('laserFilter')})`} />
+        <circle cx="32" cy="31" r="1.5" fill="#ffffff" />
       </svg>
 
       {/* Modern High-Craft Wordmark */}
       {showText && (
-        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
           <div style={{
             fontSize: '18px',
             fontWeight: 900,
-            letterSpacing: '0.5px',
+            letterSpacing: '0.4px',
             color: 'var(--text)',
             display: 'flex',
             alignItems: 'center',
             gap: '6px'
           }}>
-            <span>MAIL<span style={{ color: 'var(--accent)' }}>TRACE</span></span>
+            <span>MAIL<span style={{ color: 'var(--accent)', textShadow: '0 0 12px var(--accent-glow)' }}>TRACE</span></span>
             <span style={{
               fontSize: '10px',
               fontWeight: 800,
-              letterSpacing: '0.8px',
-              padding: '2px 5px',
-              borderRadius: '4px',
-              background: 'linear-gradient(135deg, #0ea5e9 0%, #14b8a6 100%)',
+              letterSpacing: '0.9px',
+              padding: '2px 6px',
+              borderRadius: '5px',
+              background: 'linear-gradient(135deg, #0ea5e9 0%, #10b981 100%)',
               color: '#ffffff',
-              boxShadow: '0 2px 8px rgba(14, 165, 233, 0.4)'
+              boxShadow: '0 2px 10px rgba(14, 165, 233, 0.45)'
             }}>
               AI
             </span>
           </div>
           <span style={{
             fontSize: '9.5px',
-            fontWeight: 600,
+            fontWeight: 700,
             color: 'var(--text-faint)',
-            letterSpacing: '0.4px',
+            letterSpacing: '0.7px',
             marginTop: '3px',
             textTransform: 'uppercase'
           }}>
-            Threat Intelligence
+            {subtitle}
           </span>
         </div>
       )}

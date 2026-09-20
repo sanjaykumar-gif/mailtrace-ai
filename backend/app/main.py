@@ -1,74 +1,123 @@
-"""MailTrace AI — FastAPI application entry point."""
+"""
+MailTrace AI — FastAPI Enterprise Application Entry Point.
+Explainable Email Threat Investigation & Attack Campaign Correlation Platform.
+"""
 
-import os
+from __future__ import annotations
+
+import time
+import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
-# Auto-load .env file if present
-env_path = Path(__file__).resolve().parent.parent / '.env'
-if env_path.exists():
-    try:
-        from dotenv import load_dotenv
-        load_dotenv(dotenv_path=env_path)
-    except ImportError:
-        # Fallback basic .env loader if python-dotenv is not installed
-        with open(env_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    k, v = line.split('=', 1)
-                    os.environ[k.strip()] = v.strip()
+from fastapi import FastAPI, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from .analyzers.imap_watcher import imap_watcher
 from .analyzers.pipeline import analyze_raw
 from .api.routes import router
+from .core.config import settings
+from .core.logging import logger
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifecycle manager for clean startup and shutdown sequences."""
+    logger.info(f"=== Starting {settings.APP_NAME} v{settings.APP_VERSION} ({settings.APP_ENV}) ===")
+    
+    # Connect live IMAP watcher directly to analysis pipeline
+    imap_watcher.on_email_received = lambda raw_bytes, src: analyze_raw(raw_bytes, source=src)
+    
+    # Auto-start IMAP watcher if credentials present in environment / .env
+    if settings.IMAP_USER and settings.IMAP_PASS:
+        logger.info(f"[IMAP] Auto-connecting live mailbox watcher for {settings.IMAP_USER}...")
+        success, msg = imap_watcher.connect_and_start(
+            host=settings.IMAP_SERVER,
+            username=settings.IMAP_USER,
+            password=settings.IMAP_PASS,
+            port=settings.IMAP_PORT,
+            use_ssl=settings.IMAP_SSL,
+            poll_interval=settings.IMAP_POLL_INTERVAL,
+        )
+        logger.info(f"[IMAP] Watcher startup status: {msg}")
+
+    yield
+
+    # Clean shutdown
+    logger.info(f"=== Shutting down {settings.APP_NAME} ===")
+    if imap_watcher.is_running:
+        logger.info("[IMAP] Stopping background IMAP watcher...")
+        imap_watcher.stop()
+
 
 app = FastAPI(
-    title='MailTrace AI',
-    description='Explainable Email Threat Investigation & Attack Campaign '
-                'Correlation Platform — SIH 2026 (SIH26106)',
-    version='1.0.0',
+    title=settings.APP_NAME,
+    description="Explainable Email Threat Investigation & Attack Campaign Correlation Platform "
+                "— Real-time header forensics, SPF/DKIM/DMARC matrix, and multi-wave clustering.",
+    version=settings.APP_VERSION,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    lifespan=lifespan,
 )
 
+# CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['*'],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=False,
-    allow_methods=['*'],
-    allow_headers=['*'],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# Connect live IMAP watcher directly to analysis pipeline
-imap_watcher.on_email_received = lambda raw_bytes, src: analyze_raw(raw_bytes, source=src)
 
-# Auto-start IMAP watcher if credentials present in .env
-imap_host = os.getenv('IMAP_SERVER', 'imap.gmail.com')
-imap_user = os.getenv('IMAP_USER', '').strip()
-imap_pass = os.getenv('IMAP_PASS', '').strip()
-imap_port = int(os.getenv('IMAP_PORT', '993'))
+# Correlation ID & Security Headers Middleware
+@app.middleware("http")
+async def request_context_middleware(request: Request, call_next):
+    req_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+    start_time = time.perf_counter()
+    
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        logger.error(f"[{req_id}] Unhandled Exception: {exc}", exc_info=True)
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "success": False,
+                "error": {
+                    "code": "INTERNAL_SERVER_ERROR",
+                    "message": "An unexpected server error occurred. Please try again.",
+                    "details": str(exc) if settings.DEBUG else None
+                },
+                "request_id": req_id
+            }
+        )
+    
+    elapsed_ms = (time.perf_counter() - start_time) * 1000
+    response.headers["X-Request-ID"] = req_id
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Response-Time-Ms"] = f"{elapsed_ms:.2f}"
+    
+    if request.url.path not in ("/api/health", "/api/campaigns", "/api/imap/status"):
+        logger.info(f"[{req_id}] {request.method} {request.url.path} -> {response.status_code} ({elapsed_ms:.1f}ms)")
+        
+    return response
 
-if imap_user and imap_pass:
-    print(f"[MailTrace AI] Auto-connecting live IMAP watcher for {imap_user}...")
-    success, msg = imap_watcher.connect_and_start(
-        host=imap_host,
-        username=imap_user,
-        password=imap_pass,
-        port=imap_port,
-        use_ssl=True,
-    )
-    print(f"[MailTrace AI] IMAP Status: {msg}")
 
-app.include_router(router, prefix='/api')
+# Register API Router
+app.include_router(router, prefix=settings.API_PREFIX)
 
 
-@app.get('/')
+@app.get("/", tags=["System"])
 def root():
     return {
-        'name': 'MailTrace AI',
-        'tagline': 'From Suspicious Email to Attack Campaign.',
-        'docs': '/docs',
-        'health': '/api/health',
-        'imap_active': imap_watcher.is_connected,
+        "name": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "tagline": "From Suspicious Email to Attack Campaign.",
+        "docs": "/docs",
+        "health": f"{settings.API_PREFIX}/health",
+        "imap_active": imap_watcher.is_running,
     }
-

@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, fmtDate } from '../services/api.js'
 import { Empty, ErrorBanner, Loading, RiskBadge } from '../components/Bits.jsx'
+import PageGuideModal from '../components/PageGuideModal.jsx'
 
 export default function History() {
   const [rows, setRows] = useState([])
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState('')
+  const [showGuide, setShowGuide] = useState(false)
   const navigate = useNavigate()
 
   const load = useCallback(async () => {
@@ -38,6 +40,47 @@ export default function History() {
     }
   }
 
+  const guideTabs = [
+    {
+      id: 'retention',
+      name: 'Incident Retention',
+      icon: '🗄️',
+      title: 'Telemetry Persistence & Storage Architecture',
+      steps: [
+        'Every uploaded or live-scanned email is permanently indexed in the MailTrace local vector store.',
+        'Extracted headers, SPF/DKIM authentication outcomes, hop IPs, and decomposed URLs are cached for instant recall.',
+        'Historical records form the baseline corpus used by the Attack DNA engine to cluster multi-wave phishing waves.',
+        'No plaintext email bodies are transmitted to 3rd-party servers; all heuristics execute in your dedicated backend environment.'
+      ],
+      proTip: 'Deleting a historical scan automatically recalculates Jaccard similarity metrics and campaign clusters across the remaining dataset.'
+    },
+    {
+      id: 'triage',
+      name: 'SOC Triage Workflow',
+      icon: '🛡️',
+      title: 'Incident Prioritization & Response',
+      steps: [
+        'Sort or identify records with Risk Scores > 70 (Malicious / High Risk) first.',
+        'Click any row to open the deep Forensic Dissection view with hop timelines and raw header inspector.',
+        'Examine the Campaign tag: if an email is assigned a campaign (e.g., CMP-7F2A), check the Attack DNA page to see all affected mailboxes.',
+        'Use the copyable IoC lists from individual analysis pages to update perimeter blocklists (e.g. Palo Alto, Cloudflare, CrowdStrike).'
+      ],
+      proTip: 'Consistently review emails with "Suspicious" classification (Risk 40–69) to identify emerging BEC impersonation techniques.'
+    },
+    {
+      id: 'evidence',
+      name: 'Evidence Handling',
+      icon: '⚖️',
+      title: 'Forensic Audit & Legal Compliance',
+      steps: [
+        'Maintain chain of custody: Header signatures (DKIM hashes, ARC seals) prove message integrity at the time of delivery.',
+        'Export full forensic summaries for compliance reporting and incident retrospectives.',
+        'When removing false-positive test emails, use the "Delete" action to prevent test fixtures from skewing correlation models.'
+      ],
+      proTip: 'Ensure team members tag incident tickets with the MailTrace Analysis UUID for cross-team SOC visibility.'
+    }
+  ]
+
   if (loading) return <Loading text="Loading analysis history…" />
 
   return (
@@ -48,7 +91,16 @@ export default function History() {
           <div className="sub">Past email scans and detected threat scores.</div>
         </div>
         <div className="spacer" />
-        <Link to="/analyze" className="btn btn-primary">+ Scan Email</Link>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowGuide(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+          >
+            📖 History & Audit Guide
+          </button>
+          <Link to="/analyze" className="btn btn-primary">+ Scan Email</Link>
+        </div>
       </div>
 
       <ErrorBanner error={error} onRetry={load} />
@@ -90,6 +142,15 @@ export default function History() {
           </div>
         </div>
       )}
+
+      {/* History & Audit Guidance Modal */}
+      <PageGuideModal
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+        title="Audit & Incident History Guide"
+        subtitle="Best practices for telemetry retention, SOC incident triage, and forensic evidence tracking."
+        tabs={guideTabs}
+      />
     </div>
   )
 }

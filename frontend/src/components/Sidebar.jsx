@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { api } from '../services/api.js'
+import { useTheme } from '../context/ThemeContext.jsx'
 import Logo from './Logo.jsx'
 
 const Icon = ({ d }) => (
@@ -20,6 +21,7 @@ const links = [
 ]
 
 export default function Sidebar() {
+  const { theme, toggleTheme } = useTheme()
   const [online, setOnline] = useState(null)
   const [imapActive, setImapActive] = useState(false)
   const [campaigns, setCampaigns] = useState(0)
@@ -88,18 +90,74 @@ export default function Sidebar() {
 
   return (
     <>
-      <button className="menu-toggle" onClick={() => setOpen(!open)} aria-label="menu">☰</button>
+      {/* Mobile Top App Bar */}
+      <header className="mobile-topbar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            className="mobile-menu-btn"
+            onClick={() => setOpen(!open)}
+            aria-label="Toggle navigation menu"
+          >
+            ☰
+          </button>
+          <Logo size={26} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={toggleTheme}
+            className="theme-toggle-btn"
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+        </div>
+      </header>
+
+      {/* Backdrop for Mobile Drawer */}
+      <div
+        className={`sidebar-backdrop ${open ? 'active' : ''}`}
+        onClick={() => setOpen(false)}
+        aria-hidden="true"
+      />
+
+      {/* Sidebar Navigation */}
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <div className="brand" style={{ padding: '18px 18px 14px' }}>
-          <Logo size={34} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Logo size={32} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button
+                onClick={toggleTheme}
+                className="theme-toggle-btn desktop-only"
+                title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
+              <button
+                onClick={() => setOpen(false)}
+                className="sidebar-close-btn mobile-only"
+                aria-label="Close sidebar"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
           <div className="brand-tag" style={{ marginTop: '8px' }}>
-            Email Threat Scanner &amp; Security Guide
+            Threat Investigation &amp; Correlation
           </div>
         </div>
+
         <nav className="nav">
           {links.map((l) => (
-            <NavLink key={l.to} to={l.to} end={l.to === '/'}
-              className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
+            <NavLink
+              key={l.to}
+              to={l.to}
+              end={l.to === '/'}
+              onClick={() => setOpen(false)}
+              className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}
+            >
               <Icon d={l.icon} />
               {l.label}
               {l.isLive && imapActive && (
@@ -109,7 +167,7 @@ export default function Sidebar() {
                   height: 8,
                   borderRadius: '50%',
                   background: '#22c55e',
-                  boxShadow: '0 0 6px #22c55e',
+                  boxShadow: '0 0 8px #22c55e',
                   display: 'inline-block'
                 }} />
               )}
@@ -175,6 +233,7 @@ export default function Sidebar() {
           ) : (
             <NavLink
               to="/login"
+              onClick={() => setOpen(false)}
               className="btn btn-primary"
               style={{
                 width: '100%',
@@ -184,7 +243,7 @@ export default function Sidebar() {
                 textDecoration: 'none'
               }}
             >
-              🔒 Sign In / Sign Up
+              🔒 Sign In / Access SOC
             </NavLink>
           )}
         </div>
@@ -199,7 +258,7 @@ export default function Sidebar() {
                 </div>
                 <div className="status-label">
                   {online === null ? 'Connecting…'
-                    : online ? (imapActive ? 'Live Ingestion Active' : 'Scanner Ready') : 'Backend Offline'}
+                    : online ? (imapActive ? 'Live Ingestion Active' : 'SOC Engine Ready') : 'Backend Offline'}
                 </div>
               </div>
             </div>
