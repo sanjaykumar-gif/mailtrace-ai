@@ -34,6 +34,7 @@ export default function HomeScanner() {
     return saved === null ? true : saved === 'true'
   })
 
+  const [scanningSample, setScanningSample] = useState(null)
   const fileInput = useRef(null)
   const resultRef = useRef(null)
 
@@ -69,7 +70,7 @@ export default function HomeScanner() {
               name: s.filename,
               label: defaultMatch?.label || s.filename.replace(/_/g, ' ').replace('.eml', ''),
               threat: s.filename.includes('safe') ? 'SAFE' : s.filename.includes('bec') || s.filename.includes('fraud') ? 'HIGH' : 'CRITICAL',
-              score: s.filename.includes('safe') ? 0 : s.filename.includes('credential') ? 100 : 85,
+              score: s.filename.includes('safe') ? 0 : s.filename.includes('credential') ? 100 : 90,
               desc: s.description || defaultMatch?.desc || 'Forensic demo test scenario'
             }
           })
@@ -121,6 +122,7 @@ export default function HomeScanner() {
 
   const runSampleScan = (sampleName) => {
     setError(null)
+    setScanningSample(sampleName)
     runScan(() => api.analyzeSample(sampleName))
   }
 
@@ -132,20 +134,25 @@ export default function HomeScanner() {
 
     const stepInterval = setInterval(() => {
       setScanStep((prev) => (prev < scanStepsText.length - 1 ? prev + 1 : prev))
-    }, 280)
+    }, 180)
 
     try {
       const data = await apiCall()
       clearInterval(stepInterval)
-      setScanning(false)
-      setResult(data)
-      showToast('Forensic analysis completed successfully', 'success')
+      setScanStep(scanStepsText.length - 1)
       setTimeout(() => {
-        resultRef.current?.scrollIntoView({ behavior: 'smooth' })
-      }, 120)
+        setScanning(false)
+        setScanningSample(null)
+        setResult(data)
+        showToast('Forensic analysis completed successfully', 'success')
+        setTimeout(() => {
+          resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 100)
+      }, 200)
     } catch (err) {
       clearInterval(stepInterval)
       setScanning(false)
+      setScanningSample(null)
       setError(err.message || 'Scan failed.')
       showToast(err.message || 'Scan failed', 'error')
     }
@@ -415,41 +422,61 @@ export default function HomeScanner() {
               Click any forensic test sample below to trigger deep rule detection and multi-email correlation:
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
-              {samplesList.map((s) => (
-                <div
-                  key={s.name}
-                  onClick={() => !scanning && runSampleScan(s.name)}
-                  style={{
-                    background: 'var(--panel)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '10px',
-                    padding: '14px',
-                    cursor: scanning ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    gap: '8px'
-                  }}
-                  className="card-hover-effect"
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <RiskBadge value={s.threat} />
-                    <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-faint)' }}>
-                      {s.score} pts
-                    </span>
+              {samplesList.map((s) => {
+                const isThisScanning = scanning && scanningSample === s.name
+                return (
+                  <div
+                    key={s.name}
+                    onClick={() => !scanning && runSampleScan(s.name)}
+                    style={{
+                      background: isThisScanning ? 'var(--accent-dim)' : 'var(--panel)',
+                      border: isThisScanning ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                      borderRadius: '10px',
+                      padding: '14px',
+                      cursor: scanning ? (isThisScanning ? 'wait' : 'not-allowed') : 'pointer',
+                      transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                      transform: isThisScanning ? 'scale(1.02)' : 'none',
+                      boxShadow: isThisScanning ? '0 0 15px var(--accent-glow)' : 'none'
+                    }}
+                    className="card-hover-effect"
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <RiskBadge value={s.threat} />
+                      <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-faint)' }}>
+                        {s.score} pts
+                      </span>
+                    </div>
+                    <div style={{ fontWeight: 800, fontSize: '13.5px', color: 'var(--text)' }}>
+                      {s.label}
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', lineHeight: 1.35 }}>
+                      {s.desc}
+                    </div>
+                    <div style={{
+                      fontSize: '11.5px',
+                      color: isThisScanning ? 'var(--accent)' : 'var(--accent)',
+                      fontWeight: 800,
+                      marginTop: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}>
+                      {isThisScanning ? (
+                        <>
+                          <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⏳</span>
+                          Analyzing Telemetry...
+                        </>
+                      ) : (
+                        '⚡ Run Live Scan →'
+                      )}
+                    </div>
                   </div>
-                  <div style={{ fontWeight: 800, fontSize: '13.5px', color: 'var(--text)' }}>
-                    {s.label}
-                  </div>
-                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', lineHeight: 1.35 }}>
-                    {s.desc}
-                  </div>
-                  <div style={{ fontSize: '11.5px', color: 'var(--accent)', fontWeight: 700, marginTop: '4px' }}>
-                    ⚡ Run Live Scan →
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
