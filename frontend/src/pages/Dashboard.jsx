@@ -34,8 +34,13 @@ export default function Dashboard() {
 
   useEffect(() => {
     load()
+    const handleDataUpdate = () => load()
+    window.addEventListener('mailtrace_data_updated', handleDataUpdate)
     const interval = setInterval(load, 5000)
-    return () => clearInterval(interval)
+    return () => {
+      window.removeEventListener('mailtrace_data_updated', handleDataUpdate)
+      clearInterval(interval)
+    }
   }, [load])
 
   const loadSamples = async () => {

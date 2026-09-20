@@ -1,14 +1,13 @@
 /**
- * MailTrace AI — High-Fidelity Standalone Mock Intelligence & Forensic Corpus
- * Used during Evaluation / Demo Mode to guarantee 100% instant, zero-latency
- * forensic dissection even if cloud backend is cold-starting or offline.
+ * MailTrace AI — High-Fidelity Standalone Reactive Demo Intelligence Engine
+ * Synchronizes scanned emails across Dashboard, Forensics, History, and Attack DNA in real time.
  */
 
-export const MOCK_ANALYSES = [
+export const DEFAULT_RAW_ANALYSES = [
   // 1. Safe Placement Notice
   {
     id: 'demo-sample-1',
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
     sha1: 'a11b22c33d44e55f66a77b88c99d00e11f22a33b',
     source: 'sample:1_safe_notice.eml',
     filename: '1_safe_notice.eml',
@@ -53,7 +52,7 @@ export const MOCK_ANALYSES = [
   // 2. PayPal Credential Phishing
   {
     id: 'demo-sample-2',
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(Date.now() - 3600000 * 1).toISOString(),
     sha1: 'e48a73bc92810f65b12874109823451098765432',
     source: 'sample:2_phishing_credential.eml',
     filename: '2_phishing_credential.eml',
@@ -111,7 +110,7 @@ export const MOCK_ANALYSES = [
   // 3. Executive BEC Impersonation
   {
     id: 'demo-sample-3',
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(Date.now() - 3600000 * 3).toISOString(),
     sha1: '3344556677889900aabbccddeeff001122334455',
     source: 'sample:3_impersonation_bec.eml',
     filename: '3_impersonation_bec.eml',
@@ -155,7 +154,7 @@ export const MOCK_ANALYSES = [
   // 4. Fake Invoice Attachment
   {
     id: 'demo-sample-4',
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(Date.now() - 3600000 * 4).toISOString(),
     sha1: '4455667788990011223344556677889900112233',
     source: 'sample:4_invoice_fraud.eml',
     filename: '4_invoice_fraud.eml',
@@ -198,7 +197,7 @@ export const MOCK_ANALYSES = [
   // 5. Campaign: Support Phish
   {
     id: 'demo-sample-5',
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(Date.now() - 3600000 * 5).toISOString(),
     sha1: '55667788990011223344556677889900aabbccdd',
     source: 'sample:5_campaign_support.eml',
     filename: '5_campaign_support.eml',
@@ -238,7 +237,7 @@ export const MOCK_ANALYSES = [
   // 6. Campaign: Billing Phish
   {
     id: 'demo-sample-6',
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(Date.now() - 3600000 * 6).toISOString(),
     sha1: '66778899001122334455667788990011aabbccdd',
     source: 'sample:6_campaign_billing.eml',
     filename: '6_campaign_billing.eml',
@@ -278,7 +277,7 @@ export const MOCK_ANALYSES = [
   // 7. Campaign: Account Alert
   {
     id: 'demo-sample-7',
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(Date.now() - 3600000 * 7).toISOString(),
     sha1: '77889900112233445566778899001122aabbccdd',
     source: 'sample:7_campaign_account.eml',
     filename: '7_campaign_account.eml',
@@ -316,63 +315,156 @@ export const MOCK_ANALYSES = [
   }
 ]
 
-export const MOCK_CAMPAIGNS = [
-  {
-    id: 'CMP-7F2A',
-    title: 'Coordinated M365 Credential Harvest Wave',
-    confidence: 96,
-    member_count: 3,
-    shared_indicators: [
-      { type: 'ip', label: 'Shared Origin Server IP (91.240.118.50)', points: 30, values: ['91.240.118.50'] },
-      { type: 'domain', label: 'Shared Domain Infrastructure (*.auth-portal-verify365.net)', points: 25, values: ['auth-portal-verify365.net'] },
-      { type: 'url', label: 'Shared Phishing Kit URI (/m365/login.php)', points: 20, values: ['http://91.240.118.50/m365/login.php'] },
-      { type: 'pattern', label: 'Identical Sender Naming Pattern (admin-*@)', points: 10, values: ['admin-support@ / admin-billing@ / admin-account@'] }
-    ],
-    disclaimer: 'Correlation indicates shared infrastructure between emails; treat campaign results as investigation leads.',
-    created_at: new Date().toISOString(),
-    members: [
-      { id: 'demo-sample-5', subject: 'Action Required: Microsoft 365 Password Expiration Alert', sender: { address: 'admin-support@auth-portal-verify365.net' }, risk_score: 90, classification: 'CRITICAL' },
-      { id: 'demo-sample-6', subject: 'Billing Invoice #8410 Overdue - Immediate Payment Required', sender: { address: 'admin-billing@auth-portal-verify365.net' }, risk_score: 90, classification: 'CRITICAL' },
-      { id: 'demo-sample-7', subject: 'Security Alert: Unusual Sign-In Activity Detected - Verify Identity', sender: { address: 'admin-account@auth-portal-verify365.net' }, risk_score: 90, classification: 'CRITICAL' }
-    ],
-    graph: {
-      nodes: [
-        { id: 'CMP-7F2A', label: 'Campaign CMP-7F2A', group: 'campaign', radius: 26 },
-        { id: 'demo-sample-5', label: 'M365 Password Alert', group: 'email', radius: 18, risk_score: 90, classification: 'CRITICAL' },
-        { id: 'demo-sample-6', label: 'Billing Overdue Notice', group: 'email', radius: 18, risk_score: 90, classification: 'CRITICAL' },
-        { id: 'demo-sample-7', label: 'Account Re-Auth Notice', group: 'email', radius: 18, risk_score: 90, classification: 'CRITICAL' },
-        { id: 'ip-91.240.118.50', label: '91.240.118.50', group: 'ip', radius: 14 },
-        { id: 'dom-auth-portal', label: 'auth-portal-verify365.net', group: 'domain', radius: 14 }
-      ],
-      links: [
-        { source: 'CMP-7F2A', target: 'demo-sample-5', value: 3 },
-        { source: 'CMP-7F2A', target: 'demo-sample-6', value: 3 },
-        { source: 'CMP-7F2A', target: 'demo-sample-7', value: 3 },
-        { source: 'demo-sample-5', target: 'ip-91.240.118.50', value: 2 },
-        { source: 'demo-sample-6', target: 'ip-91.240.118.50', value: 2 },
-        { source: 'demo-sample-7', target: 'ip-91.240.118.50', value: 2 },
-        { source: 'demo-sample-5', target: 'dom-auth-portal', value: 2 },
-        { source: 'demo-sample-6', target: 'dom-auth-portal', value: 2 },
-        { source: 'demo-sample-7', target: 'dom-auth-portal', value: 2 }
-      ]
-    }
-  }
-]
+// Persistent Local Store Management for Reactive Demo Synchronization
+const STORAGE_KEY = 'mailtrace_demo_analyses_v2'
 
-export const MOCK_STATS = {
-  total: 7,
-  critical: 4,
-  high: 2,
-  medium: 0,
-  low: 0,
-  safe: 1,
-  campaigns: 1,
-  distribution: [
-    { name: 'CRITICAL', value: 4 },
-    { name: 'HIGH', value: 2 },
-    { name: 'MEDIUM', value: 0 },
-    { name: 'LOW', value: 0 },
-    { name: 'SAFE', value: 1 }
-  ],
-  imap_active: false
+export function getStoredAnalyses() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed
+      }
+    }
+  } catch (e) {
+    console.warn('Error reading demo analyses:', e)
+  }
+  // Initialize with the default 4 sample analyses if not populated yet
+  const initial = DEFAULT_RAW_ANALYSES.slice(0, 4)
+  saveStoredAnalyses(initial)
+  return initial
 }
+
+export function saveStoredAnalyses(list) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
+    // Broadcast data update event so all open views immediately refresh
+    window.dispatchEvent(new CustomEvent('mailtrace_data_updated', { detail: { count: list.length } }))
+  } catch (e) {
+    console.warn('Error writing demo analyses:', e)
+  }
+}
+
+/**
+ * Record a newly scanned email in demo mode and push to the top of the history list.
+ */
+export function recordDemoAnalysis(analysisRecord) {
+  const current = getStoredAnalyses()
+  const updatedRecord = {
+    ...analysisRecord,
+    timestamp: new Date().toISOString()
+  }
+  
+  // Filter out older instance if present, then prepend the new scan
+  const filtered = current.filter(a => a.id !== updatedRecord.id && a.filename !== updatedRecord.filename)
+  const nextList = [updatedRecord, ...filtered]
+  
+  // If this is a campaign sample (5, 6, 7), ensure all campaign members are linked
+  if (updatedRecord.campaign_id === 'CMP-7F2A' || updatedRecord.filename?.includes('campaign')) {
+    const allCampaignSamples = DEFAULT_RAW_ANALYSES.filter(a => a.campaign_id === 'CMP-7F2A')
+    allCampaignSamples.forEach(sample => {
+      if (!nextList.some(item => item.id === sample.id)) {
+        nextList.push({ ...sample, timestamp: new Date().toISOString() })
+      }
+    })
+  }
+
+  saveStoredAnalyses(nextList)
+  return updatedRecord
+}
+
+/**
+ * Compute real-time dashboard statistics dynamically from stored analyses.
+ */
+export function getDynamicStats() {
+  const analyses = getStoredAnalyses()
+  let critical = 0, high = 0, medium = 0, low = 0, safe = 0
+  
+  analyses.forEach(a => {
+    const c = (a.classification || '').toUpperCase()
+    if (c === 'CRITICAL') critical++
+    else if (c === 'HIGH') high++
+    else if (c === 'MEDIUM') medium++
+    else if (c === 'LOW') low++
+    else if (c === 'SAFE') safe++
+  })
+
+  const hasCampaign = analyses.some(a => a.campaign_id === 'CMP-7F2A')
+
+  return {
+    total: analyses.length,
+    critical,
+    high,
+    medium,
+    low,
+    safe,
+    campaigns: hasCampaign ? 1 : 0,
+    distribution: [
+      { name: 'CRITICAL', value: critical },
+      { name: 'HIGH', value: high },
+      { name: 'MEDIUM', value: medium },
+      { name: 'LOW', value: low },
+      { name: 'SAFE', value: safe }
+    ],
+    imap_active: false
+  }
+}
+
+/**
+ * Get dynamic campaign list reflecting the actively stored analyses.
+ */
+export function getDynamicCampaigns() {
+  const analyses = getStoredAnalyses()
+  const campaignEmails = analyses.filter(a => a.campaign_id === 'CMP-7F2A')
+  
+  if (campaignEmails.length === 0) {
+    return []
+  }
+
+  return [
+    {
+      id: 'CMP-7F2A',
+      title: 'Coordinated M365 Credential Harvest Wave',
+      confidence: 96,
+      member_count: campaignEmails.length,
+      shared_indicators: [
+        { type: 'ip', label: 'Shared Origin Server IP (91.240.118.50)', points: 30, values: ['91.240.118.50'] },
+        { type: 'domain', label: 'Shared Domain Infrastructure (*.auth-portal-verify365.net)', points: 25, values: ['auth-portal-verify365.net'] },
+        { type: 'url', label: 'Shared Phishing Kit URI (/m365/login.php)', points: 20, values: ['http://91.240.118.50/m365/login.php'] },
+        { type: 'pattern', label: 'Identical Sender Naming Pattern (admin-*@)', points: 10, values: ['admin-support@ / admin-billing@ / admin-account@'] }
+      ],
+      disclaimer: 'Correlation indicates shared infrastructure between emails; treat campaign results as investigation leads.',
+      created_at: new Date().toISOString(),
+      members: campaignEmails.map(a => ({
+        id: a.id,
+        subject: a.subject,
+        sender: a.sender,
+        risk_score: a.risk_score,
+        classification: a.classification
+      })),
+      graph: {
+        nodes: [
+          { id: 'CMP-7F2A', label: 'Campaign CMP-7F2A', group: 'campaign', radius: 26 },
+          ...campaignEmails.map(a => ({
+            id: a.id,
+            label: a.subject.substring(0, 24) + '...',
+            group: 'email',
+            radius: 18,
+            risk_score: a.risk_score,
+            classification: a.classification
+          })),
+          { id: 'ip-91.240.118.50', label: '91.240.118.50', group: 'ip', radius: 14 },
+          { id: 'dom-auth-portal', label: 'auth-portal-verify365.net', group: 'domain', radius: 14 }
+        ],
+        links: [
+          ...campaignEmails.map(a => ({ source: 'CMP-7F2A', target: a.id, value: 3 })),
+          ...campaignEmails.map(a => ({ source: a.id, target: 'ip-91.240.118.50', value: 2 })),
+          ...campaignEmails.map(a => ({ source: a.id, target: 'dom-auth-portal', value: 2 }))
+        ]
+      }
+    }
+  ]
+}
+
+export const MOCK_ANALYSES = DEFAULT_RAW_ANALYSES

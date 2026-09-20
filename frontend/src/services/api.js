@@ -1,5 +1,12 @@
-// Clean API service layer for MailTrace AI with Demo / Sandbox Fallback.
-import { MOCK_ANALYSES, MOCK_CAMPAIGNS, MOCK_STATS } from './mockData.js'
+// Clean API service layer for MailTrace AI with Real-Time Reactive Demo Store
+import {
+  DEFAULT_RAW_ANALYSES,
+  getStoredAnalyses,
+  saveStoredAnalyses,
+  recordDemoAnalysis,
+  getDynamicStats,
+  getDynamicCampaigns
+} from './mockData.js'
 
 const BASE = (import.meta.env.VITE_API_BASE || '/api').replace(/\/$/, '')
 
@@ -12,16 +19,18 @@ export function isDemoMode() {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 async function req(path, { method = 'GET', json, form, timeoutMs = 5000, forceDemo = false } = {}) {
-  // If Demo Mode is explicitly active and this is a sample analysis or catalog request, serve mock data instantly
+  // If Demo Mode is explicitly active, handle operations via local reactive store
   if (isDemoMode() || forceDemo) {
     if (
       path.startsWith('/analyze/sample/') ||
       path === '/samples' ||
       path === '/samples/load' ||
+      path === '/reset' ||
+      (path.startsWith('/analyses/') && method === 'DELETE') ||
       (path === '/analyze' && method === 'POST') ||
       (path === '/analyze/upload' && method === 'POST')
     ) {
-      await sleep(400) // Brief 400ms delay to let the scanner progress bar animate smoothly
+      await sleep(350) // Brief delay for realistic UI transition
       return getDemoFallback(path, method, json)
     }
   }
@@ -86,48 +95,87 @@ async function req(path, { method = 'GET', json, form, timeoutMs = 5000, forceDe
 }
 
 function getDemoFallback(path, method = 'GET', json = null) {
-  console.log(`[MailTrace Demo Sandbox] Instant response for: ${method} ${path}`)
+  console.log(`[MailTrace Reactive Demo Store] Dispatching: ${method} ${path}`)
   
   if (path === '/health') {
-    return { status: 'ok', engine: 'MailTrace AI Demo Sandbox', analyses_stored: MOCK_ANALYSES.length, campaigns_count: MOCK_CAMPAIGNS.length, imap_active: false }
+    const stored = getStoredAnalyses()
+    const campaigns = getDynamicCampaigns()
+    return {
+      status: 'ok',
+      engine: 'MailTrace AI Demo Sandbox',
+      analyses_stored: stored.length,
+      campaigns_count: campaigns.length,
+      imap_active: false
+    }
   }
+
   if (path === '/stats') {
-    return MOCK_STATS
+    return getDynamicStats()
   }
+
   if (path === '/analyses') {
-    return { count: MOCK_ANALYSES.length, analyses: MOCK_ANALYSES.map(summarizeLocal) }
+    const stored = getStoredAnalyses()
+    return { count: stored.length, analyses: stored.map(summarizeLocal) }
   }
+
+  if (path.startsWith('/analyses/') && method === 'DELETE') {
+    const aid = decodeURIComponent(path.replace('/analyses/', ''))
+    const current = getStoredAnalyses()
+    const filtered = current.filter(a => a.id !== aid && a.filename !== aid)
+    saveStoredAnalyses(filtered)
+    return { success: true, message: `Deleted ${aid}` }
+  }
+
   if (path.startsWith('/analyses/')) {
     const aid = decodeURIComponent(path.replace('/analyses/', ''))
-    const found = MOCK_ANALYSES.find((a) => a.id === aid || a.id.includes(aid) || a.filename === aid) || MOCK_ANALYSES[0]
+    const stored = getStoredAnalyses()
+    const found = stored.find((a) => a.id === aid || a.id.includes(aid) || a.filename === aid) ||
+                  DEFAULT_RAW_ANALYSES.find((a) => a.id === aid || a.id.includes(aid) || a.filename === aid) ||
+                  DEFAULT_RAW_ANALYSES[0]
     return found
   }
+
   if (path.startsWith('/analyze/sample/')) {
     const filename = decodeURIComponent(path.replace('/analyze/sample/', '')).toLowerCase()
-    if (filename.includes('1_') || filename.includes('safe')) return MOCK_ANALYSES[0]
-    if (filename.includes('2_') || filename.includes('paypal') || filename.includes('credential')) return MOCK_ANALYSES[1]
-    if (filename.includes('3_') || filename.includes('bec') || filename.includes('impersonation')) return MOCK_ANALYSES[2]
-    if (filename.includes('4_') || filename.includes('invoice') || filename.includes('fraud')) return MOCK_ANALYSES[3]
-    if (filename.includes('5_') || filename.includes('support')) return MOCK_ANALYSES[4]
-    if (filename.includes('6_') || filename.includes('billing')) return MOCK_ANALYSES[5]
-    if (filename.includes('7_') || filename.includes('account')) return MOCK_ANALYSES[6]
-    return MOCK_ANALYSES[1] // default to critical sample
+    let match = DEFAULT_RAW_ANALYSES[1] // default PayPal critical
+    if (filename.includes('1_') || filename.includes('safe')) match = DEFAULT_RAW_ANALYSES[0]
+    else if (filename.includes('2_') || filename.includes('paypal') || filename.includes('credential')) match = DEFAULT_RAW_ANALYSES[1]
+    else if (filename.includes('3_') || filename.includes('bec') || filename.includes('impersonation')) match = DEFAULT_RAW_ANALYSES[2]
+    else if (filename.includes('4_') || filename.includes('invoice') || filename.includes('fraud')) match = DEFAULT_RAW_ANALYSES[3]
+    else if (filename.includes('5_') || filename.includes('support')) match = DEFAULT_RAW_ANALYSES[4]
+    else if (filename.includes('6_') || filename.includes('billing')) match = DEFAULT_RAW_ANALYSES[5]
+    else if (filename.includes('7_') || filename.includes('account')) match = DEFAULT_RAW_ANALYSES[6]
+
+    // Record into persistent demo store so it immediately reflects across Dashboard, Forensics, History, and Attack DNA
+    return recordDemoAnalysis(match)
   }
+
   if (path === '/analyze' || path === '/analyze/upload') {
-    // If user typed/dropped text in demo mode, classify appropriately
+    let match = DEFAULT_RAW_ANALYSES[1]
     if (json?.content && json.content.toLowerCase().includes('safe')) {
-      return MOCK_ANALYSES[0]
+      match = DEFAULT_RAW_ANALYSES[0]
     }
-    return MOCK_ANALYSES[1]
+    const customRecord = {
+      ...match,
+      id: 'scan-' + Date.now().toString(36),
+      subject: json?.content ? (json.content.split('\n')[0].substring(0, 50) || 'Scanned Email Telemetry') : 'Uploaded Email Telemetry',
+      source: 'upload:user_telemetry.eml'
+    }
+    return recordDemoAnalysis(customRecord)
   }
+
   if (path === '/campaigns') {
-    return { count: MOCK_CAMPAIGNS.length, campaigns: MOCK_CAMPAIGNS }
+    const dynamicCampaigns = getDynamicCampaigns()
+    return { count: dynamicCampaigns.length, campaigns: dynamicCampaigns }
   }
+
   if (path.startsWith('/campaigns/')) {
     const cid = decodeURIComponent(path.replace('/campaigns/', ''))
-    const found = MOCK_CAMPAIGNS.find((c) => c.id === cid) || MOCK_CAMPAIGNS[0]
+    const dynamicCampaigns = getDynamicCampaigns()
+    const found = dynamicCampaigns.find((c) => c.id === cid) || dynamicCampaigns[0] || null
     return found
   }
+
   if (path === '/samples') {
     return {
       samples: [
@@ -141,12 +189,22 @@ function getDemoFallback(path, method = 'GET', json = null) {
       ]
     }
   }
+
   if (path === '/samples/load') {
-    return { message: 'Loaded 7 demo samples into workspace', count: 7 }
+    // Load all 7 default samples into the store
+    saveStoredAnalyses(DEFAULT_RAW_ANALYSES)
+    return { loaded: DEFAULT_RAW_ANALYSES.length, count: DEFAULT_RAW_ANALYSES.length, message: 'Loaded all 7 demo samples into workspace' }
   }
+
+  if (path === '/reset') {
+    saveStoredAnalyses([])
+    return { success: true, message: 'Cleared demo telemetry store' }
+  }
+
   if (path === '/imap/status') {
     return { is_running: false, is_connected: false, connected_user: null, scanned_count: 0, threat_count: 0 }
   }
+
   if (path === '/dns/lookup') {
     return {
       domain: json?.domain || 'target-domain.example',
@@ -155,6 +213,7 @@ function getDemoFallback(path, method = 'GET', json = null) {
       live_ip: { ip: json?.ip || '185.220.101.42', is_private: false, country: 'Russian Federation', city: 'Moscow', isp: 'Bulletproof Networks Ltd', org: 'BadActor Autonomous System', as: 'AS44192' }
     }
   }
+
   return { success: true }
 }
 

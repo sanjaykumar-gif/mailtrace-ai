@@ -18,12 +18,17 @@ export default function Forensics() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    api.analyses().then((r) => {
-      setList(r.analyses)
-      if (!selected && r.analyses.length) {
-        setSelected(r.analyses[0].id)
-      }
-    }).catch((e) => setError(e.message))
+    const fetchList = () => {
+      api.analyses().then((r) => {
+        setList(r.analyses)
+        if (!selected && r.analyses.length) {
+          setSelected(r.analyses[0].id)
+        }
+      }).catch((e) => setError(e.message))
+    }
+    fetchList()
+    window.addEventListener('mailtrace_data_updated', fetchList)
+    return () => window.removeEventListener('mailtrace_data_updated', fetchList)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

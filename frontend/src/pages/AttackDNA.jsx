@@ -44,7 +44,12 @@ export default function AttackDNA() {
     }
   }, [selected])
 
-  useEffect(() => { loadList() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    loadList()
+    const handleDataUpdate = () => loadList()
+    window.addEventListener('mailtrace_data_updated', handleDataUpdate)
+    return () => window.removeEventListener('mailtrace_data_updated', handleDataUpdate)
+  }, [loadList])
 
   useEffect(() => {
     if (!selected) { setDetail(null); return }

@@ -24,7 +24,12 @@ export default function History() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+    const handleDataUpdate = () => load()
+    window.addEventListener('mailtrace_data_updated', handleDataUpdate)
+    return () => window.removeEventListener('mailtrace_data_updated', handleDataUpdate)
+  }, [load])
 
   const remove = async (e, id) => {
     e.stopPropagation()
