@@ -29,9 +29,26 @@ export default function HomeScanner() {
   const [pasteContent, setPasteContent] = useState('')
   const [samplesList, setSamplesList] = useState(DEFAULT_DEMO_SAMPLES)
   const [showExportGuide, setShowExportGuide] = useState(false)
+  const [demoMode, setDemoMode] = useState(() => {
+    const saved = localStorage.getItem('mailtrace_demo_mode')
+    return saved === null ? true : saved === 'true'
+  })
 
   const fileInput = useRef(null)
   const resultRef = useRef(null)
+
+  useEffect(() => {
+    const updateDemoMode = () => {
+      const saved = localStorage.getItem('mailtrace_demo_mode')
+      setDemoMode(saved === null ? true : saved === 'true')
+    }
+    window.addEventListener('demo_mode_change', updateDemoMode)
+    window.addEventListener('storage', updateDemoMode)
+    return () => {
+      window.removeEventListener('demo_mode_change', updateDemoMode)
+      window.removeEventListener('storage', updateDemoMode)
+    }
+  }, [])
 
   const scanStepsText = [
     'Parsing RFC-5322 MIME email headers & routing hops...',
@@ -61,26 +78,6 @@ export default function HomeScanner() {
       })
       .catch((e) => console.log('Using local demo sample catalog fallback:', e))
   }, [])
-
-  const [isDemo, setIsDemo] = useState(() => {
-    try {
-      return localStorage.getItem('mailtrace_demo_mode') === 'true'
-    } catch {
-      return false
-    }
-  })
-
-  const toggleDemoMode = () => {
-    const next = !isDemo
-    setIsDemo(next)
-    try {
-      localStorage.setItem('mailtrace_demo_mode', String(next))
-    } catch {}
-    if (!next && activeTab === 'samples') {
-      setActiveTab('upload')
-    }
-    showToast(next ? '🧪 Prototype Demo Mode Activated' : '🏢 Clean Enterprise Scanner Active', 'info')
-  }
 
   const validateFile = (f) => {
     if (!f) return false
@@ -135,7 +132,7 @@ export default function HomeScanner() {
 
     const stepInterval = setInterval(() => {
       setScanStep((prev) => (prev < scanStepsText.length - 1 ? prev + 1 : prev))
-    }, 450)
+    }, 280)
 
     try {
       const data = await apiCall()
@@ -181,15 +178,15 @@ export default function HomeScanner() {
           gap: '0.5rem',
           padding: '0.35rem 1rem',
           borderRadius: '999px',
-          background: isDemo ? 'rgba(56, 189, 248, 0.15)' : 'var(--accent-dim)',
-          border: isDemo ? '1px solid var(--accent)' : '1px solid var(--accent-glow)',
+          background: 'var(--accent-dim)',
+          border: '1px solid var(--accent-glow)',
           color: 'var(--accent)',
           fontSize: '0.8rem',
           fontWeight: 700,
           marginBottom: '0.75rem'
         }}>
-          <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: isDemo ? '#38bdf8' : '#10b981', boxShadow: '0 0 8px #38bdf8' }} />
-          {isDemo ? '🧪 Prototype Demo Mode Active — 7 Test Vectors Unlocked' : 'Explainable Threat & Campaign Correlation Engine'}
+          <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 8px #38bdf8' }} />
+          Explainable Threat &amp; Campaign Correlation Engine
         </div>
 
         <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--text)', margin: '0 0 0.5rem', letterSpacing: '-0.03em' }}>
@@ -199,77 +196,29 @@ export default function HomeScanner() {
           Drop any suspicious email file to verify sender authenticity, trace origin server infrastructure, inspect concealed link redirects, and identify coordinated attack campaigns.
         </p>
 
-        {/* Demo Mode Toggle & Test Samples Bar */}
-        {isDemo ? (
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '8px',
-            marginTop: '1.25rem',
-            padding: '10px 16px',
-            background: 'var(--panel)',
-            border: '1px solid var(--border)',
-            borderRadius: '12px'
-          }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', color: 'var(--accent)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                ⚡ Test Vectors:
-              </span>
-              {samplesList.map((s) => (
-                <button
-                  key={s.name}
-                  disabled={scanning}
-                  onClick={() => runSampleScan(s.name)}
-                  className="btn btn-sm"
-                  style={{
-                    fontSize: '11px',
-                    borderRadius: '999px',
-                    padding: '3px 10px',
-                    background: 'var(--panel2)',
-                    borderColor: 'var(--border)'
-                  }}
-                >
-                  {s.label}
-                </button>
-              ))}
+        {/* Quick Demo Sample Pills (Only when Demo Mode is ON) */}
+        {demoMode && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '1.25rem' }}>
+            <span style={{ fontSize: '12px', color: 'var(--accent)', alignSelf: 'center', fontWeight: 800 }}>
+              ⚡ Instant Demos:
+            </span>
+            {samplesList.slice(0, 4).map((s) => (
               <button
-                onClick={toggleDemoMode}
+                key={s.name}
+                disabled={scanning}
+                onClick={() => runSampleScan(s.name)}
                 className="btn btn-sm"
                 style={{
-                  fontSize: '10.5px',
-                  padding: '3px 8px',
-                  borderRadius: '6px',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  color: '#f87171',
-                  borderColor: 'rgba(239, 68, 68, 0.3)'
+                  fontSize: '11.5px',
+                  borderRadius: '999px',
+                  padding: '4px 12px',
+                  background: 'var(--panel2)',
+                  borderColor: 'var(--border)'
                 }}
-                title="Hide demo vectors and return to clean enterprise scanner"
               >
-                ✕ Exit Demo Mode
+                {s.label}
               </button>
-            </div>
-          </div>
-        ) : (
-          <div style={{ marginTop: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>
-              🏢 Enterprise Scanning Mode Active ·
-            </span>
-            <button
-              onClick={toggleDemoMode}
-              className="btn btn-sm"
-              style={{
-                fontSize: '11px',
-                padding: '3px 10px',
-                borderRadius: '999px',
-                background: 'rgba(56, 189, 248, 0.12)',
-                color: 'var(--accent)',
-                borderColor: 'var(--accent-glow)',
-                fontWeight: 700
-              }}
-            >
-              ⚡ Enable Demo Mode (Instant Test Samples)
-            </button>
+            ))}
           </div>
         )}
       </div>
@@ -324,7 +273,7 @@ export default function HomeScanner() {
             </button>
           </div>
 
-          <div className="tabs" style={{ maxWidth: isDemo ? '440px' : '300px', width: '100%' }}>
+          <div className="tabs" style={{ maxWidth: demoMode ? '440px' : '300px', width: '100%' }}>
             <button
               onClick={() => setActiveTab('upload')}
               className={`tab ${activeTab === 'upload' ? 'active' : ''}`}
@@ -337,7 +286,7 @@ export default function HomeScanner() {
             >
               📝 Raw Text
             </button>
-            {isDemo && (
+            {demoMode && (
               <button
                 onClick={() => setActiveTab('samples')}
                 className={`tab ${activeTab === 'samples' ? 'active' : ''}`}

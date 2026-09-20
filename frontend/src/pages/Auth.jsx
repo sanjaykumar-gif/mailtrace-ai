@@ -18,7 +18,18 @@ export default function Auth() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [successMsg, setSuccessMsg] = useState(null)
+  const [demoMode, setDemoMode] = useState(() => {
+    const saved = localStorage.getItem('mailtrace_demo_mode')
+    return saved === null ? true : saved === 'true'
+  })
   const navigate = useNavigate()
+
+  const toggleDemoMode = () => {
+    const next = !demoMode
+    setDemoMode(next)
+    localStorage.setItem('mailtrace_demo_mode', String(next))
+    window.dispatchEvent(new Event('demo_mode_change'))
+  }
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -131,7 +142,71 @@ export default function Auth() {
       </div>
 
       {/* Main Form Card */}
-      <div className="card" style={{ width: '100%', padding: '2rem', borderRadius: 'var(--card-radius)' }}>
+      <div className="card" style={{ width: '100%', padding: '1.8rem', borderRadius: 'var(--card-radius)' }}>
+        {/* Small Edge Toggle for Demo / Test Mode */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '6px 12px',
+          background: demoMode ? 'rgba(56, 189, 248, 0.08)' : 'var(--panel2)',
+          border: '1px solid ' + (demoMode ? 'rgba(56, 189, 248, 0.3)' : 'var(--border)'),
+          borderRadius: '999px',
+          marginBottom: '1.25rem',
+          cursor: 'pointer',
+          userSelect: 'none'
+        }}
+        onClick={toggleDemoMode}
+        title="Toggle between Evaluation Sandbox (All Test Vectors) and Pure Production Prototype"
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              background: demoMode ? '#38bdf8' : '#64748b',
+              boxShadow: demoMode ? '0 0 8px #38bdf8' : 'none'
+            }} />
+            <span style={{
+              fontSize: '11px',
+              fontWeight: 800,
+              letterSpacing: '0.3px',
+              textTransform: 'uppercase',
+              color: demoMode ? 'var(--accent)' : 'var(--text-faint)'
+            }}>
+              {demoMode ? '🧪 Demo Mode: Active' : '🏢 Original Prototype'}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '10px', fontWeight: 800, color: demoMode ? 'var(--accent)' : 'var(--text-faint)' }}>
+              {demoMode ? 'ON' : 'OFF'}
+            </span>
+            <div style={{
+              width: '32px',
+              height: '18px',
+              borderRadius: '999px',
+              background: demoMode ? 'var(--accent)' : 'var(--panel-hover)',
+              border: '1px solid var(--border)',
+              position: 'relative',
+              transition: 'all 0.2s ease',
+              flexShrink: 0
+            }}>
+              <div style={{
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                background: '#ffffff',
+                position: 'absolute',
+                top: '2px',
+                left: demoMode ? '16px' : '2px',
+                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+              }} />
+            </div>
+          </div>
+        </div>
+
         {/* Toggle Mode Pills */}
         <div className="tabs" style={{ marginBottom: '1.5rem' }}>
           <button
@@ -439,46 +514,48 @@ export default function Auth() {
           <span>Sign in with Google</span>
         </button>
 
-        {/* 1-Click Quick Demo Access */}
-        <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border)' }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-faint)', letterSpacing: '0.5px', marginBottom: '0.65rem', textAlign: 'center' }}>
-            ⚡ 1-Click Demo Evaluation Profiles
+        {/* 1-Click Quick Demo Access (Only shown when Demo Mode is ON) */}
+        {demoMode && (
+          <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--accent)', letterSpacing: '0.5px', marginBottom: '0.65rem', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+              <span>⚡ 1-Click Demo Evaluation Profiles</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => handleDemoLogin('SOC Analyst', 'soc.analyst@cyberdefense.in')}
+                style={{
+                  padding: '0.55rem',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  background: 'var(--accent-dim)',
+                  color: 'var(--text)',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                🛡️ SOC Analyst
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoLogin('Security Admin', 'admin@mailtrace.ai')}
+                style={{
+                  padding: '0.55rem',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  background: 'var(--accent-dim)',
+                  color: 'var(--text)',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                👑 Security Admin
+              </button>
+            </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('SOC Analyst', 'soc.analyst@cyberdefense.in')}
-              style={{
-                padding: '0.5rem',
-                borderRadius: '6px',
-                border: '1px solid var(--border)',
-                background: 'var(--panel2)',
-                color: 'var(--text)',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                cursor: 'pointer'
-              }}
-            >
-              🛡️ SOC Analyst
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('Security Admin', 'admin@mailtrace.ai')}
-              style={{
-                padding: '0.5rem',
-                borderRadius: '6px',
-                border: '1px solid var(--border)',
-                background: 'var(--panel2)',
-                color: 'var(--text)',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                cursor: 'pointer'
-              }}
-            >
-              👑 Security Admin
-            </button>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   )
