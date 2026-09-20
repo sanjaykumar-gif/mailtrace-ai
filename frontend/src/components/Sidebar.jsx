@@ -181,70 +181,115 @@ export default function Sidebar() {
         {/* User Account / Auth Section */}
         <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border)' }}>
           {user ? (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              background: 'var(--panel2)',
-              padding: '8px 10px',
-              borderRadius: '8px',
-              border: '1px solid var(--border)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                <div style={{
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '50%',
-                  background: 'var(--accent)',
-                  color: '#fff',
-                  fontWeight: 800,
-                  fontSize: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}>
-                  {user.avatar || 'U'}
-                </div>
-                <div style={{ overflow: 'hidden', lineHeight: 1.2 }}>
-                  <div style={{ fontWeight: 700, fontSize: '12px', color: 'var(--text)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                    {user.name}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: 'var(--panel2)',
+                padding: '8px 10px',
+                borderRadius: '8px',
+                border: '1px solid var(--border)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                  <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    background: user.isDemoMode ? 'linear-gradient(135deg, #38bdf8, #10b981)' : 'var(--accent)',
+                    color: '#fff',
+                    fontWeight: 800,
+                    fontSize: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    {user.avatar || 'U'}
                   </div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-faint)' }}>
-                    {user.role}
+                  <div style={{ overflow: 'hidden', lineHeight: 1.2 }}>
+                    <div style={{ fontWeight: 700, fontSize: '12px', color: 'var(--text)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                      {user.name}
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-faint)' }}>
+                      {user.role}
+                    </div>
                   </div>
                 </div>
+                <button
+                  onClick={logout}
+                  title="Log out"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-faint)',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    padding: '4px'
+                  }}
+                >
+                  ⏻
+                </button>
               </div>
-              <button
-                onClick={logout}
-                title="Log out"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-faint)',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  padding: '4px'
-                }}
-              >
-                ⏻
-              </button>
+
+              {/* Mode Status Pill */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '4px 8px',
+                borderRadius: '6px',
+                background: user.isDemoMode ? 'rgba(56, 189, 248, 0.1)' : 'var(--panel2)',
+                border: user.isDemoMode ? '1px solid var(--accent-glow)' : '1px solid var(--border)',
+                fontSize: '10.5px'
+              }}>
+                <span style={{ color: user.isDemoMode ? 'var(--accent)' : 'var(--text-muted)', fontWeight: 700 }}>
+                  {user.isDemoMode ? '🧪 Demo Mode Active' : '🏢 Production Mode'}
+                </span>
+                <NavLink
+                  to="/login"
+                  style={{ color: 'var(--accent)', fontSize: '10px', textDecoration: 'underline' }}
+                >
+                  Switch
+                </NavLink>
+              </div>
             </div>
           ) : (
-            <NavLink
-              to="/login"
-              onClick={() => setOpen(false)}
-              className="btn btn-primary"
-              style={{
-                width: '100%',
-                fontSize: '12px',
-                padding: '7px 12px',
-                borderRadius: '8px',
-                textDecoration: 'none'
-              }}
-            >
-              🔒 Sign In / Access SOC
-            </NavLink>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <NavLink
+                to="/login"
+                onClick={() => setOpen(false)}
+                className="btn btn-primary"
+                style={{
+                  width: '100%',
+                  fontSize: '12px',
+                  padding: '7px 12px',
+                  borderRadius: '8px',
+                  textDecoration: 'none',
+                  background: 'linear-gradient(90deg, #38bdf8, #10b981)',
+                  color: '#090d16',
+                  fontWeight: 800,
+                  border: 'none'
+                }}
+              >
+                ⚡ 1-Click Demo Mode
+              </NavLink>
+              <NavLink
+                to="/login"
+                onClick={() => setOpen(false)}
+                className="btn"
+                style={{
+                  width: '100%',
+                  fontSize: '11px',
+                  padding: '5px 10px',
+                  borderRadius: '6px',
+                  textDecoration: 'none',
+                  textAlign: 'center'
+                }}
+              >
+                🔒 Sign In / Register
+              </NavLink>
+            </div>
           )}
         </div>
 
