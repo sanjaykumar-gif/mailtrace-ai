@@ -19,20 +19,16 @@ export function isDemoMode() {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 async function req(path, { method = 'GET', json, form, timeoutMs = 5000, forceDemo = false } = {}) {
-  // If Demo Mode is explicitly active, handle operations via local reactive store
+  // If Demo Mode is explicitly active, handle ALL endpoints directly without waiting for remote network timeouts
   if (isDemoMode() || forceDemo) {
     if (
       path.startsWith('/analyze/sample/') ||
-      path === '/samples' ||
-      path === '/samples/load' ||
-      path === '/reset' ||
-      (path.startsWith('/analyses/') && method === 'DELETE') ||
       (path === '/analyze' && method === 'POST') ||
       (path === '/analyze/upload' && method === 'POST')
     ) {
-      await sleep(350) // Brief delay for realistic UI transition
-      return getDemoFallback(path, method, json)
+      await sleep(300) // Quick smooth delay for the scanner progress bar animation
     }
+    return getDemoFallback(path, method, json)
   }
 
   let res
@@ -95,7 +91,7 @@ async function req(path, { method = 'GET', json, form, timeoutMs = 5000, forceDe
 }
 
 function getDemoFallback(path, method = 'GET', json = null) {
-  console.log(`[MailTrace Reactive Demo Store] Dispatching: ${method} ${path}`)
+  console.log(`[MailTrace Reactive Demo Store] Instant response for: ${method} ${path}`)
   
   if (path === '/health') {
     const stored = getStoredAnalyses()
