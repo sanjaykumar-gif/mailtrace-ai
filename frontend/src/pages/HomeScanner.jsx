@@ -240,10 +240,37 @@ export default function HomeScanner() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          fontSize: '0.88rem'
+          fontSize: '0.88rem',
+          flexWrap: 'wrap',
+          gap: '10px'
         }}>
-          <div>⚠️ {error}</div>
-          <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+          <div style={{ flex: 1, minWidth: '240px' }}>⚠️ {error}</div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {!demoMode && (error.includes('cold start') || error.includes('timed out') || error.includes('Cannot reach')) && (
+              <button
+                className="btn btn-sm"
+                onClick={() => {
+                  localStorage.setItem('mailtrace_demo_mode', 'true')
+                  window.dispatchEvent(new Event('demo_mode_change'))
+                  setError(null)
+                  showToast('Switched to Demo Sandbox Mode', 'success')
+                }}
+                style={{
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  border: 'none',
+                  fontWeight: 800,
+                  fontSize: '11px',
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                🧪 Switch to Instant Demo Mode
+              </button>
+            )}
+            <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+          </div>
         </div>
       )}
 
