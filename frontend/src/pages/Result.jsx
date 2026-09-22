@@ -7,7 +7,9 @@ import AuthPanel from '../components/AuthPanel.jsx'
 import LinkSecurityPanel from '../components/LinkSecurityPanel.jsx'
 import AttributionPanel from '../components/AttributionPanel.jsx'
 import ForensicReportModal from '../components/ForensicReportModal.jsx'
-import PageGuideModal from '../components/PageGuideModal.jsx'
+import ExplainableScore from '../components/ExplainableScore.jsx'
+import AttackStoryTimeline from '../components/AttackStoryTimeline.jsx'
+import InfrastructureGraph from '../components/InfrastructureGraph.jsx'
 
 export default function Result() {
   const { id } = useParams()
@@ -119,6 +121,16 @@ export default function Result() {
         </div>
       </div>
 
+      {/* Top Explainable Risk Score Breakdown */}
+      <ExplainableScore
+        riskScore={data.risk_score}
+        indicators={data.indicators}
+        explanation={data.explanation}
+        auth={data.auth}
+        nlp={data.nlp_analysis}
+        geotrace={data.geotrace}
+      />
+
       {/* Top Verdict Summary Card */}
       <div style={{
         background: 'var(--panel)',
@@ -209,6 +221,8 @@ export default function Result() {
       }}>
         {[
           { id: 'nlp', label: '🧠 Threat & NLP AI', icon: '🚨' },
+          { id: 'story', label: '📖 Attack Story Timeline', icon: '📖' },
+          { id: 'infra', label: '🕸️ Infrastructure Graph', icon: '🕸️' },
           { id: 'links', label: '🔗 Link Security', icon: '🔗' },
           { id: 'geotrace', label: '🌍 Origin & GeoTrace', icon: '📍' },
           { id: 'dna', label: '🧬 Attack DNA', icon: '🧬' },
@@ -330,6 +344,16 @@ export default function Result() {
               ))}
             </div>
           </div>
+        </div>
+      {activeTab === 'story' && (
+        <div>
+          <AttackStoryTimeline detail={data} />
+        </div>
+      )}
+
+      {activeTab === 'infra' && (
+        <div>
+          <InfrastructureGraph detail={data} />
         </div>
       )}
 

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, fmtDate } from '../services/api.js'
 import { Empty, ErrorBanner, Loading, RiskBadge } from '../components/Bits.jsx'
 import CampaignGraph from '../components/CampaignGraph.jsx'
+import DnaEvolutionTrack from '../components/DnaEvolutionTrack.jsx'
 import PageGuideModal from '../components/PageGuideModal.jsx'
 import { useToast } from '../context/ToastContext.jsx'
 
@@ -221,6 +222,9 @@ export default function AttackDNA() {
                 </div>
                 <CampaignGraph graph={detail.graph || { nodes: [], links: [] }} />
               </div>
+
+              {/* Attack DNA Evolution & Adversary Adaptation Track */}
+              <DnaEvolutionTrack detail={detail} />
 
               {/* Shared Threat Indicators */}
               <div>
