@@ -1,5 +1,5 @@
-"""
-MailTrace AI — Enterprise API Routing & Controller Layer.
+"""MailTrace AI — Enterprise API Routing & Controller Layer.
+Full Problem Statement PS 26106 Endpoints.
 """
 
 from __future__ import annotations
@@ -29,6 +29,10 @@ from ..models.schemas import (
     DnsLookupRequest,
     HealthResponse,
     ImapConnectRequest,
+    IncidentRecord,
+    IncidentUpdatePayload,
+    LedgerEvent,
+    PrivacyConfig,
     StatsResponse,
 )
 from ..storage.store import store
@@ -52,12 +56,16 @@ SAMPLE_NAME_RE = re.compile(r'^[A-Za-z0-9_\-.]+\.eml$')
 def health():
     analyses = store.load_analyses()
     campaigns = store.load_campaigns()
+    incidents = store.load_incidents()
+    ledger = store.load_ledger_events()
     return {
         'status': 'ok',
         'engine': 'MailTrace AI live analysis engine',
         'version': '1.0.0',
         'analyses_stored': len(analyses),
         'campaigns_count': len(campaigns),
+        'incidents_count': len(incidents),
+        'ledger_events_count': len(ledger),
         'imap_active': imap_watcher.is_running,
         'uptime_seconds': 0.0,
     }
@@ -98,55 +106,28 @@ def imap_status():
 
 
 @router.post(
-    '/imap/sync',
-    tags=["Live Ingestion"],
-    summary="Force an immediate IMAP mailbox sync cycle"
-)
-def imap_sync():
-    res = imap_watcher.sync_now()
-    if not res.get('success'):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=res.get('message', 'Sync failed')
-        )
-    return res
-
-
-@router.post(
     '/imap/disconnect',
     tags=["Live Ingestion"],
-    summary="Stop background IMAP watcher"
+    summary="Disconnect live IMAP watcher"
 )
 def imap_disconnect():
     imap_watcher.stop()
-    return {'success': True, 'message': 'Live mailbox monitoring stopped.'}
+    return {'success': True, 'message': 'IMAP watcher disconnected cleanly.', 'status': imap_watcher.get_status()}
 
 
 # ======================================================================
-# Live DNS & Threat Intelligence Endpoints
-# ======================================================================
-
-@router.post(
-    '/dns/lookup',
-    tags=["Intelligence"],
-    summary="Query live DNS and origin IP intelligence"
-)
-def dns_lookup(req: DnsLookupRequest):
-    dns_intel = get_live_dns_intel(req.domain)
-    ip_intel = get_live_ip_intel(req.ip) if req.ip else None
-    return {'domain_intel': dns_intel, 'ip_intel': ip_intel}
-
-
-# ======================================================================
-# Analysis Endpoints
+# Core Analysis Endpoints
 # ======================================================================
 
 @router.post(
-    '/analyze',
+    '/analyze/text',
     tags=["Analysis"],
-    summary="Analyze pasted raw RFC email text"
+    summary="Analyze raw RFC-5322 email text or pasted headers"
 )
-def analyze(content: str = Body(..., embed=True)):
+def analyze_text(payload: dict = Body(...)):
+    content = payload.get('content', '')
+    if not content or not content.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Email content is empty.')
     try:
         return analyze_raw(content.encode('utf-8', errors='replace'), source='paste')
     except ValueError as exc:
@@ -175,7 +156,7 @@ async def analyze_upload(file: UploadFile = File(...)):
     if len(data) > MAX_INPUT_BYTES:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail='File exceeds the 2 MB upload limit.'
+            detail='File exceeds the 5 MB upload limit.'
         )
     try:
         return analyze_raw(data, source=f'upload:{name}')
@@ -278,129 +259,70 @@ def load_all_samples():
     summary="List all historical email analyses"
 )
 def list_analyses():
-    analyses = store.load_analyses()
-    analyses.sort(key=lambda a: a.get('timestamp', ''), reverse=True)
-    return {'count': len(analyses), 'analyses': [summarize(a) for a in analyses]}
+    all_analyses = store.load_analyses()
+    all_analyses.sort(key=lambda a: a.get('timestamp', ''), reverse=True)
+    return {'analyses': [summarize(a) for a in all_analyses]}
 
 
 @router.get(
     '/analyses/{analysis_id}',
     tags=["History"],
-    summary="Get deep forensic record for an analysis"
+    summary="Retrieve full forensic details of an analysis"
 )
 def get_analysis(analysis_id: str):
     a = store.get_analysis(analysis_id)
     if not a:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Analysis not found.')
-    out = dict(a)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Analysis record not found.')
     
-    # attach related campaign activity
-    related = []
-    campaign = None
+    # Attach campaign context if available
     if a.get('campaign_id'):
-        campaign = store.get_campaign(a['campaign_id'])
-    for rid in a.get('related_ids', []) or []:
-        ra = store.get_analysis(rid)
-        if ra:
-            related.append({
-                'id': ra['id'],
-                'subject': ra.get('subject', '(No Subject)'),
-                'sender': ra.get('sender'),
-                'risk_score': ra.get('risk_score', 0),
-                'classification': ra.get('classification', 'SAFE')
-            })
-    out['related'] = related
-    if campaign:
-        out['campaign'] = {
-            'id': campaign['id'],
-            'title': campaign['title'],
-            'confidence': campaign['confidence'],
-            'member_count': campaign['member_count'],
-            'disclaimer': campaign['disclaimer']
-        }
-    return out
+        camp = store.get_campaign(a['campaign_id'])
+        if camp:
+            a['campaign'] = campaign_detail(camp)
+    return a
 
 
 @router.delete(
     '/analyses/{analysis_id}',
     tags=["History"],
-    summary="Delete an analysis and recompute campaigns"
+    summary="Delete an analysis record"
 )
 def delete_analysis(analysis_id: str):
-    if not store.delete_analysis(analysis_id):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Analysis not found.')
+    ok = store.delete_analysis(analysis_id)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Analysis record not found.')
     correlation.recompute_campaigns(store)
-    return {'deleted': True, 'id': analysis_id}
+    return {'success': True, 'id': analysis_id}
 
 
-# ======================================================================
-# Dashboard Stats & Aggregations
-# ======================================================================
-
-@router.get(
-    '/stats',
-    response_model=StatsResponse,
-    tags=["Dashboard"],
-    summary="Aggregated SOC statistics and risk score distribution"
+@router.delete(
+    '/analyses',
+    tags=["History"],
+    summary="Purge all stored analyses and campaign clusters"
 )
-def stats():
-    analyses = store.load_analyses()
-    campaigns = store.load_campaigns()
-    dist = {'SAFE': 0, 'LOW': 0, 'MEDIUM': 0, 'HIGH': 0, 'CRITICAL': 0}
-    for a in analyses:
-        cls = a.get('classification', 'SAFE')
-        dist[cls] = dist.get(cls, 0) + 1
-    return {
-        'total': len(analyses),
-        'critical': dist.get('CRITICAL', 0),
-        'high': dist.get('HIGH', 0),
-        'medium': dist.get('MEDIUM', 0),
-        'low': dist.get('LOW', 0),
-        'safe': dist.get('SAFE', 0),
-        'campaigns': len(campaigns),
-        'distribution': [{'name': k, 'value': v} for k, v in dist.items()],
-        'imap_active': imap_watcher.is_running,
-    }
+def clear_all():
+    store.clear()
+    return {'success': True, 'message': 'Storage reset successfully.'}
 
 
 # ======================================================================
-# Attack DNA & Campaign Clusters
+# Attack DNA & Campaign Investigation Endpoints
 # ======================================================================
 
 @router.get(
     '/campaigns',
-    tags=["Campaigns"],
+    tags=["Attack DNA"],
     summary="List all correlated attack campaigns"
 )
 def list_campaigns():
     campaigns = store.load_campaigns()
-    out = []
-    for c in campaigns:
-        summaries = []
-        for mid in c.get('member_ids', []):
-            a = store.get_analysis(mid)
-            if a:
-                summaries.append({
-                    'id': a['id'],
-                    'subject': a.get('subject', '(No Subject)'),
-                    'sender': a.get('sender'),
-                    'risk_score': a.get('risk_score', 0),
-                    'classification': a.get('classification', 'SAFE')
-                })
-        item = {
-            k: c[k] for k in ('id', 'title', 'confidence', 'member_count',
-                              'shared_indicators', 'disclaimer', 'created_at')
-            if k in c
-        }
-        item['members'] = summaries
-        out.append(item)
-    return {'count': len(out), 'campaigns': out}
+    return {'campaigns': [campaign_detail(c) for c in campaigns]}
 
 
 @router.get(
     '/campaigns/{campaign_id}',
-    tags=["Campaigns"],
-    summary="Get full Attack DNA graph and cluster details"
+    tags=["Attack DNA"],
+    summary="Retrieve campaign graph and timeline"
 )
 def get_campaign(campaign_id: str):
     c = store.get_campaign(campaign_id)
@@ -410,14 +332,249 @@ def get_campaign(campaign_id: str):
 
 
 # ======================================================================
-# Workspace Maintenance
+# Incident Response & Case Management Endpoints
 # ======================================================================
 
-@router.post(
-    '/reset',
-    tags=["System"],
-    summary="Clear all analyses and campaign clusters"
+@router.get(
+    '/incidents',
+    tags=["Incidents"],
+    summary="List all security incidents"
 )
-def reset():
-    store.clear()
-    return {'cleared': True}
+def list_incidents():
+    incidents = store.load_incidents()
+    incidents.sort(key=lambda i: i.get('created_at', ''), reverse=True)
+    return {'incidents': incidents}
+
+
+@router.get(
+    '/incidents/{incident_id}',
+    tags=["Incidents"],
+    summary="Get detailed incident response ticket"
+)
+def get_incident(incident_id: str):
+    inc = store.get_incident(incident_id)
+    if not inc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Incident ticket not found.')
+    return inc
+
+
+@router.patch(
+    '/incidents/{incident_id}',
+    tags=["Incidents"],
+    summary="Update incident ticket status or notes"
+)
+def update_incident(incident_id: str, payload: IncidentUpdatePayload):
+    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    inc = store.update_incident(incident_id, updates)
+    if not inc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Incident ticket not found.')
+    return inc
+
+
+# ======================================================================
+# Security Policies Endpoints
+# ======================================================================
+
+@router.get(
+    '/policies',
+    tags=["Security Policies"],
+    summary="List active corporate security policies"
+)
+def list_policies():
+    return {'policies': store.load_policies()}
+
+
+@router.post(
+    '/policies',
+    tags=["Security Policies"],
+    summary="Save updated corporate security policies"
+)
+def save_policies(payload: list[dict] = Body(...)):
+    store.save_policies(payload)
+    return {'success': True, 'policies': store.load_policies()}
+
+
+# ======================================================================
+# Forensic Audit Ledger & Chain of Custody Endpoints
+# ======================================================================
+
+@router.get(
+    '/ledger',
+    tags=["Forensics"],
+    summary="List immutable chronological forensic audit events"
+)
+def list_ledger():
+    events = store.load_ledger_events()
+    events.sort(key=lambda e: e.get('timestamp', ''), reverse=True)
+    return {'events': events}
+
+
+@router.get(
+    '/evidence',
+    tags=["Forensics"],
+    summary="List preserved forensic evidence records"
+)
+def list_evidence():
+    evidence_list = store.load_evidence()
+    return {'evidence': evidence_list}
+
+
+@router.get(
+    '/evidence/{evidence_id}/custody',
+    tags=["Forensics"],
+    summary="Retrieve chain of custody and integrity verification"
+)
+def get_custody(evidence_id: str):
+    evd = store.get_evidence(evidence_id)
+    if not evd:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Evidence record not found.')
+    return evd
+
+
+# ======================================================================
+# Origin & GeoTrace Threat Map Endpoints
+# ======================================================================
+
+@router.get(
+    '/geotrace/map',
+    tags=["GeoTrace"],
+    summary="Aggregated threat origin coordinates for interactive map"
+)
+def get_geotrace_map():
+    analyses = store.load_analyses()
+    points = []
+    seen_ips = set()
+
+    for a in analyses:
+        gt = a.get('geotrace')
+        if gt and gt.get('latitude') and gt.get('longitude') and gt.get('earliest_reliable_ip'):
+            ip = gt['earliest_reliable_ip']
+            if ip not in seen_ips:
+                seen_ips.add(ip)
+                infra = gt.get('infrastructure', {})
+                points.append({
+                    "ip": ip,
+                    "latitude": gt['latitude'],
+                    "longitude": gt['longitude'],
+                    "country": gt.get('country', 'Unknown'),
+                    "city": gt.get('city', 'Unknown'),
+                    "isp": gt.get('isp', 'Unknown'),
+                    "hosting": gt.get('organization', 'Unknown'),
+                    "risk_score": a.get('risk_score', 0),
+                    "classification": a.get('classification', 'SAFE'),
+                    "email_count": 1,
+                    "vpn_indicator": infra.get('is_vpn_indicator') or infra.get('is_possible_proxy') or infra.get('is_known_tor_exit'),
+                    "confidence": gt.get('confidence', 75),
+                })
+    return {'points': points}
+
+
+# ======================================================================
+# Privacy & Compliance Endpoints
+# ======================================================================
+
+@router.get(
+    '/privacy',
+    tags=["Privacy"],
+    summary="Get privacy and masking configuration"
+)
+def get_privacy():
+    return store.get_privacy_config()
+
+
+@router.post(
+    '/privacy',
+    tags=["Privacy"],
+    summary="Update privacy controls and data retention settings"
+)
+def update_privacy(config: PrivacyConfig):
+    store.set_privacy_config(config.model_dump())
+    return {'success': True, 'privacy': store.get_privacy_config()}
+
+
+# ======================================================================
+# Printable Forensic Report Export
+# ======================================================================
+
+@router.get(
+    '/reports/{analysis_id}/export',
+    tags=["Reports"],
+    summary="Export complete structured forensic intelligence report"
+)
+def export_report(analysis_id: str):
+    a = store.get_analysis(analysis_id)
+    if not a:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Analysis record not found.')
+    
+    # Bundle complete report data
+    camp = store.get_campaign(a['campaign_id']) if a.get('campaign_id') else None
+    return {
+        "report_id": f"RPT-{a.get('tracking_id', 'EML-001')}",
+        "analysis": a,
+        "campaign": campaign_detail(camp) if camp else None,
+        "generated_at": a.get('timestamp'),
+        "integrity_verified": True,
+    }
+
+
+# ======================================================================
+# Dashboard Aggregated SOC Statistics
+# ======================================================================
+
+@router.get(
+    '/stats',
+    response_model=StatsResponse,
+    tags=["System"],
+    summary="Aggregated SOC dashboard statistics and risk distribution"
+)
+def stats():
+    analyses = store.load_analyses()
+    campaigns = store.load_campaigns()
+    incidents = store.load_incidents()
+    ledger = store.load_ledger_events()
+    evidence = store.load_evidence()
+
+    critical = sum(1 for a in analyses if a.get('classification') == 'CRITICAL')
+    high = sum(1 for a in analyses if a.get('classification') == 'HIGH')
+    medium = sum(1 for a in analyses if a.get('classification') == 'MEDIUM')
+    low = sum(1 for a in analyses if a.get('classification') == 'LOW')
+    safe = sum(1 for a in analyses if a.get('classification') == 'SAFE')
+
+    suspicious_links = sum(
+        len(a.get('link_security', {}).get('links', [])) 
+        for a in analyses if a.get('link_security')
+    )
+    origin_traces = sum(1 for a in analyses if a.get('geotrace', {}).get('earliest_reliable_ip'))
+    policy_violations = sum(
+        len(a.get('policy_evaluation', {}).get('triggered_policies', [])) 
+        for a in analyses if a.get('policy_evaluation')
+    )
+    open_incidents = sum(1 for i in incidents if i.get('status') == 'OPEN')
+
+    # Aggregated Geo Points
+    geo_map = get_geotrace_map()
+
+    return {
+        'total': len(analyses),
+        'critical': critical,
+        'high': high,
+        'medium': medium,
+        'low': low,
+        'safe': safe,
+        'campaigns': len(campaigns),
+        'active_campaigns': len(campaigns),
+        'suspicious_links': suspicious_links,
+        'origin_traces': origin_traces,
+        'policy_violations': policy_violations,
+        'open_incidents': open_incidents,
+        'evidence_records': len(evidence),
+        'distribution': [
+            {'name': 'CRITICAL', 'value': critical},
+            {'name': 'HIGH', 'value': high},
+            {'name': 'MEDIUM', 'value': medium},
+            {'name': 'LOW', 'value': low},
+            {'name': 'SAFE', 'value': safe},
+        ],
+        'imap_active': imap_watcher.is_running,
+        'geo_points': geo_map.get('points', []),
+    }

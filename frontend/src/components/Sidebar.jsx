@@ -13,12 +13,14 @@ const Icon = ({ d }) => (
 
 const links = [
   { to: '/', label: 'Scan Email', icon: 'M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0z' },
-  { to: '/live', label: 'Live Monitor', icon: 'M13 2L3 14h9l-1 8 10-12h-9l1-8z', isLive: true },
   { to: '/dashboard', label: 'Dashboard', icon: 'M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z' },
-  { to: '/forensics', label: 'Forensics', icon: 'M12 2l9 4.9v9.9L12 22l-9-5.1V6.9L12 2zm0 5v6m0 3.5v.5' },
-  { to: '/attack-dna', label: 'Campaigns', icon: 'M12 2v20M4 6c2.5 2.5 5.5 2.5 8 0s5.5-2.5 8 0M4 18c2.5-2.5 5.5-2.5 8 0s5.5 2.5 8 0M7 4v16M17 4v16', badge: true },
-  { to: '/ledger', label: 'Ledger (Web3)', icon: 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71' },
-  { to: '/history', label: 'History', icon: 'M3 3h18M3 9h18M3 15h12M3 21h12' },
+  { to: '/geotrace', label: 'Origin GeoTrace', icon: 'M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 17.93V18a2 2 0 0 0-2-2h-1v-2h4a1 1 0 0 0 1-1V9.5A1.5 1.5 0 0 0 13.5 8h-3a1.5 1.5 0 0 0-1.5 1.5V11H7v-2a1 1 0 0 1 1-1h1.5a1.5 1.5 0 0 0 1.5-1.5V5.07A8 8 0 0 1 13 19.93z' },
+  { to: '/incidents', label: 'Policies & Incidents', icon: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' },
+  { to: '/attack-dna', label: 'Campaigns (DNA)', icon: 'M12 2v20M4 6c2.5 2.5 5.5 2.5 8 0s5.5-2.5 8 0M4 18c2.5-2.5 5.5-2.5 8 0s5.5 2.5 8 0M7 4v16M17 4v16', badge: true },
+  { to: '/forensics', label: 'Email Forensics', icon: 'M12 2l9 4.9v9.9L12 22l-9-5.1V6.9L12 2zm0 5v6m0 3.5v.5' },
+  { to: '/live', label: 'Live Monitor', icon: 'M13 2L3 14h9l-1 8 10-12h-9l1-8z', isLive: true },
+  { to: '/ledger', label: 'Forensic Ledger', icon: 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71' },
+  { to: '/history', label: 'Audit History', icon: 'M3 3h18M3 9h18M3 15h12M3 21h12' },
 ]
 
 export default function Sidebar() {

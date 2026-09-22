@@ -145,6 +145,7 @@ export default function HomeScanner() {
         setScanning(false)
         setScanningSample(null)
         setResult(data)
+        window.dispatchEvent(new Event('mailtrace_data_updated'))
         showToast('Forensic analysis completed successfully', 'success')
         setTimeout(() => {
           resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })

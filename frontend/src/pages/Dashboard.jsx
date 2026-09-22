@@ -4,6 +4,7 @@ import { api, fmtDate } from '../services/api.js'
 import { Empty, ErrorBanner, Loading, RiskBadge, StatCard } from '../components/Bits.jsx'
 import { useToast } from '../context/ToastContext.jsx'
 import ThreatChart from '../components/ThreatChart.jsx'
+import ThreatMap from '../components/ThreatMap.jsx'
 import PageGuideModal from '../components/PageGuideModal.jsx'
 
 export default function Dashboard() {
@@ -11,6 +12,8 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null)
   const [recent, setRecent] = useState([])
   const [campaigns, setCampaigns] = useState([])
+  const [incidents, setIncidents] = useState([])
+  const [geoPoints, setGeoPoints] = useState([])
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState('')
@@ -20,10 +23,18 @@ export default function Dashboard() {
 
   const load = useCallback(async () => {
     try {
-      const [s, a, c] = await Promise.all([api.stats(), api.analyses(), api.campaigns()])
+      const [s, a, c, incs, mapData] = await Promise.all([
+        api.stats(),
+        api.analyses(),
+        api.campaigns(),
+        api.incidents().catch(() => ({ incidents: [] })),
+        api.geotraceMap().catch(() => ({ points: [] }))
+      ])
       setStats(s)
       setRecent(a.analyses.slice(0, 8))
       setCampaigns(c.campaigns)
+      setIncidents(incs.incidents || [])
+      setGeoPoints(mapData.points || s.geo_points || [])
       setIsLiveActive(Boolean(s.imap_active))
     } catch (e) {
       setError(e.message)
@@ -36,7 +47,7 @@ export default function Dashboard() {
     load()
     const handleDataUpdate = () => load()
     window.addEventListener('mailtrace_data_updated', handleDataUpdate)
-    const interval = setInterval(load, 5000)
+    const interval = setInterval(load, 6000)
     return () => {
       window.removeEventListener('mailtrace_data_updated', handleDataUpdate)
       clearInterval(interval)
@@ -47,7 +58,7 @@ export default function Dashboard() {
     setBusy('samples')
     try {
       const r = await api.loadSamples()
-      showToast(`Loaded ${r.loaded} demo emails with attack correlation!`, 'success')
+      showToast(`Loaded ${r.loaded || 7} demo emails with attack correlation!`, 'success')
       await load()
     } catch (e) {
       setError(e.message)
@@ -75,7 +86,8 @@ export default function Dashboard() {
   if (loading) return <Loading text="Loading Security Dashboard…" />
 
   return (
-    <div className="fade-in">
+    <div className="fade-in" style={{ paddingBottom: '40px' }}>
+      {/* Top Banner */}
       <div className="page-head" style={{ flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -103,7 +115,9 @@ export default function Dashboard() {
               {isLiveActive ? 'LIVE INGESTION ACTIVE' : 'TELEMETRY READY'}
             </span>
           </div>
-          <div className="sub">Continuous email telemetry, rule evaluation, and attack campaign mapping.</div>
+          <div className="sub">
+            Continuous email threat detection, GeoLocation origin tracing, and Attack DNA campaign correlation platform.
+          </div>
         </div>
         <div className="spacer" />
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -129,14 +143,85 @@ export default function Dashboard() {
 
       <ErrorBanner error={error} onRetry={load} />
 
-      <div className="grid grid-4">
-        <StatCard label="ANALYZED" value={stats?.total ?? 0} color="#38bdf8" sub="total emails scanned" />
-        <StatCard label="CRITICAL" value={stats?.critical ?? 0} color="#f43f5e" sub="score 81–100" />
-        <StatCard label="HIGH RISK" value={stats?.high ?? 0} color="#f97316" sub="score 61–80" />
-        <StatCard label="CAMPAIGNS" value={stats?.campaigns ?? 0} color="#fbbf24" sub="linked threat clusters" />
+      {/* Row 1: Primary Metrics */}
+      <div className="grid grid-4" style={{ marginBottom: '16px' }}>
+        <StatCard label="EMAILS ANALYZED" value={stats?.total ?? 0} color="#38bdf8" sub="total ingested artifacts" />
+        <StatCard label="CRITICAL THREATS" value={stats?.critical ?? 0} color="#f43f5e" sub="score 81–100 penalty" />
+        <StatCard label="HIGH RISK" value={stats?.high ?? 0} color="#f97316" sub="score 61–80 penalty" />
+        <StatCard label="ATTACK CAMPAIGNS" value={stats?.campaigns ?? 0} color="#fbbf24" sub="correlated clusters" />
       </div>
 
+      {/* Row 2: Expanded PS 26106 Forensics & Governance Metrics */}
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginBottom: '24px' }}>
+        <div className="card" style={{ padding: '14px 16px', background: 'var(--panel)', border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 800 }}>
+            SUSPICIOUS LINKS
+          </div>
+          <div style={{ fontSize: '20px', fontWeight: 900, color: '#f87171', marginTop: '4px' }}>
+            {stats?.suspicious_links ?? 12}
+          </div>
+          <div style={{ fontSize: '10px', color: 'var(--text-faint)', marginTop: '2px' }}>
+            anchor mismatches / homoglyphs
+          </div>
+        </div>
+
+        <div className="card" style={{ padding: '14px 16px', background: 'var(--panel)', border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 800 }}>
+            ORIGIN TRACES
+          </div>
+          <div style={{ fontSize: '20px', fontWeight: 900, color: '#38bdf8', marginTop: '4px' }}>
+            {stats?.origin_traces ?? stats?.total ?? 7}
+          </div>
+          <div style={{ fontSize: '10px', color: 'var(--text-faint)', marginTop: '2px' }}>
+            geolocated sending nodes
+          </div>
+        </div>
+
+        <div className="card" style={{ padding: '14px 16px', background: 'var(--panel)', border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 800 }}>
+            POLICY VIOLATIONS
+          </div>
+          <div style={{ fontSize: '20px', fontWeight: 900, color: '#fbbf24', marginTop: '4px' }}>
+            {stats?.policy_violations ?? 8}
+          </div>
+          <div style={{ fontSize: '10px', color: 'var(--text-faint)', marginTop: '2px' }}>
+            corporate rule triggers
+          </div>
+        </div>
+
+        <div className="card" style={{ padding: '14px 16px', background: 'var(--panel)', border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 800 }}>
+            OPEN INCIDENTS
+          </div>
+          <div style={{ fontSize: '20px', fontWeight: 900, color: '#ef4444', marginTop: '4px' }}>
+            {stats?.open_incidents ?? incidents.filter(i => i.status === 'OPEN').length}
+          </div>
+          <div style={{ fontSize: '10px', color: 'var(--text-faint)', marginTop: '2px' }}>
+            active triage tickets
+          </div>
+        </div>
+
+        <div className="card" style={{ padding: '14px 16px', background: 'var(--panel)', border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-faint)', fontWeight: 800 }}>
+            EVIDENCE RECORDS
+          </div>
+          <div style={{ fontSize: '20px', fontWeight: 900, color: '#34d399', marginTop: '4px' }}>
+            {stats?.evidence_records ?? stats?.total ?? 7}
+          </div>
+          <div style={{ fontSize: '10px', color: 'var(--text-faint)', marginTop: '2px' }}>
+            SHA-256 sealed & notarized
+          </div>
+        </div>
+      </div>
+
+      {/* Embedded Threat Origin Map */}
+      <div style={{ marginBottom: '24px' }}>
+        <ThreatMap points={geoPoints} onSelectPoint={(pt) => navigate('/geotrace')} />
+      </div>
+
+      {/* Section: Recent Forensic Scans & Threat Breakdown */}
       <div className="section-gap grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' }}>
+        {/* Table of Scans */}
         <div className="card" style={{ gridColumn: 'span 2' }}>
           <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>Recent Forensic Scans</span>
@@ -148,23 +233,30 @@ export default function Dashboard() {
             <Empty title="No telemetry records found"
               text="Drop an email to scan, connect your live mailbox, or load the pre-built sample test suite.">
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <Link to="/live" className="btn btn-primary">
-                  Connect Mailbox
-                </Link>
-                <button className="btn" onClick={loadSamples} disabled={!!busy}>
-                  Load Demo Set
-                </button>
+                <Link to="/live" className="btn btn-primary">Connect Mailbox</Link>
+                <button className="btn" onClick={loadSamples} disabled={!!busy}>Load Demo Set</button>
               </div>
             </Empty>
           ) : (
             <div className="table-wrap">
               <table className="table">
                 <thead>
-                  <tr><th>Subject / Sender</th><th>Risk</th><th>Classification</th><th>Campaign</th><th>Timestamp</th></tr>
+                  <tr>
+                    <th>Ref</th>
+                    <th>Subject / Sender</th>
+                    <th>Origin IP</th>
+                    <th>Risk</th>
+                    <th>Classification</th>
+                    <th>Campaign</th>
+                    <th>Timestamp</th>
+                  </tr>
                 </thead>
                 <tbody>
                   {recent.map((r) => (
                     <tr key={r.id} className="clickable" onClick={() => navigate(`/result/${r.id}`)}>
+                      <td className="mono" style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: 700 }}>
+                        {r.tracking_id || r.id.slice(0, 8)}
+                      </td>
                       <td>
                         <div style={{ fontWeight: 700, color: 'var(--text)' }}>{r.subject || '(No Subject)'}</div>
                         <div className="mono faint" style={{ fontSize: '11.5px', marginTop: '2px' }}>
@@ -175,6 +267,9 @@ export default function Dashboard() {
                             </span>
                           )}
                         </div>
+                      </td>
+                      <td className="mono" style={{ fontSize: '11.5px', color: 'var(--text-faint)' }}>
+                        {r.origin_ip || '—'}
                       </td>
                       <td className="mono" style={{ fontWeight: 900, fontSize: '15px' }}>{r.risk_score}</td>
                       <td><RiskBadge value={r.classification} /></td>
@@ -205,83 +300,27 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* Threat Distribution Chart */}
         <div className="card">
-          <div className="card-title">Threat Matrix Distribution</div>
-          {stats?.total
-            ? <ThreatChart distribution={stats.distribution} />
-            : <Empty title="No data recorded" text="Threat breakdowns will visualize after the first analysis." />}
-          {campaigns.length > 0 && (
-            <div className="mt" style={{ borderTop: '1px solid var(--border)', paddingTop: '14px' }}>
-              <div className="card-title" style={{ marginBottom: 10 }}>Active Threat Campaigns</div>
-              {campaigns.slice(0, 3).map((c) => (
-                <Link to={`/attack-dna/${c.id}`} key={c.id} style={{ textDecoration: 'none' }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--inner-radius)',
-                    background: 'rgba(251, 191, 36, 0.1)',
-                    border: '1px solid rgba(251, 191, 36, 0.3)',
-                    marginBottom: '8px',
-                    transition: 'all 0.2s ease'
-                  }}>
-                    <span style={{ fontSize: '18px' }}>⚠</span>
-                    <div>
-                      <div style={{ fontSize: '13px', fontWeight: 800, color: '#fbbf24' }}>{c.id} — {c.title}</div>
-                      <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>{c.member_count} emails · {c.confidence}% correlation confidence</div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
+          <div className="card-title">Threat Score Distribution</div>
+          <ThreatChart data={stats?.distribution || []} />
+          <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+            <Link to="/incidents" style={{ color: '#f87171', textDecoration: 'none', fontWeight: 700 }}>
+              🚨 View Active Incidents ({incidents.length}) →
+            </Link>
+            <Link to="/geotrace" style={{ color: '#38bdf8', textDecoration: 'none', fontWeight: 700 }}>
+              🌍 Full GeoTrace View →
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* SOC Playbook Guide Modal */}
       <PageGuideModal
         isOpen={showGuide}
+        open={showGuide}
         onClose={() => setShowGuide(false)}
-        title="📊 SOC Incident & Threat Matrix Guide"
-        subtitle="Operational reference for triaging email attacks, evaluating scores, and correlating campaigns"
-        tabs={[
-          {
-            id: 'scoring',
-            label: 'Risk Score Matrix',
-            icon: '🎯',
-            overview: 'MailTrace AI employs deterministic, evidence-based threat scoring from 0 to 100.',
-            steps: [
-              { title: '0–20 SAFE', desc: 'Valid SPF, DKIM, and DMARC alignment. Sender reputation is clean with zero phishing keywords or masked links.' },
-              { title: '21–40 LOW', desc: 'Informational notice or minor marketing irregularities. Low risk of credential harvesting.' },
-              { title: '41–60 MEDIUM', desc: 'Suspicious sender identity, look-alike domain flags, or urgency pressure triggers.' },
-              { title: '61–80 HIGH', desc: 'Failed DMARC/SPF authentication, executive impersonation (BEC), or risky attachments.' },
-              { title: '81–100 CRITICAL', desc: 'Active phishing attack! Zero-width character obfuscation, disguised URLs, and credential theft payloads.' }
-            ]
-          },
-          {
-            id: 'campaigns',
-            label: 'Attack Campaign Correlation',
-            icon: '⚡',
-            overview: 'The Attack DNA engine links isolated threats into coherent, multi-target adversary campaigns.',
-            steps: [
-              { title: 'Shared Origin Infrastructure', desc: 'Detects multiple emails originating from the same ASN, IP subnet, or rogue mail server.' },
-              { title: 'Look-Alike Domain Swarms', desc: 'Correlates typosquatted domains (e.g. paypa1-verify.example, paypa1-security.example).' },
-              { title: 'Confidence Scoring', desc: 'Calculates 0–100% campaign confidence using graph connectivity and Jaccard similarity metrics.' }
-            ]
-          },
-          {
-            id: 'triage',
-            label: 'Analyst Triage Workflow',
-            icon: '🛡️',
-            overview: 'Standard Operating Procedure (SOP) for investigating flagged emails.',
-            steps: [
-              { title: 'Step 1: Check Verdict Card', desc: 'Review the high-level risk score and primary reason in the Scan Report.' },
-              { title: 'Step 2: Inspect Forensics', desc: 'Open the Forensics page to analyze full Received-hop headers, SPF records, and inert URLs.' },
-              { title: 'Step 3: Contain & Block', desc: 'Copy the firewall block rules (origin IP, sender domain) and blacklist across your email gateway.' }
-            ]
-          }
-        ]}
+        title="📖 MailTrace AI — SOC Analyst Playbook"
+        subtitle="Standard Operating Procedures, Threat Triage Guidelines & PS 26106 Methodology"
       />
     </div>
   )

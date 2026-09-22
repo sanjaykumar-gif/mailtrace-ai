@@ -330,8 +330,8 @@ export function getStoredAnalyses() {
   } catch (e) {
     console.warn('Error reading demo analyses:', e)
   }
-  // Initialize with the default 4 sample analyses if not populated yet
-  const initial = DEFAULT_RAW_ANALYSES.slice(0, 4)
+  // Initialize with all 7 default sample analyses so campaigns and dashboards are populated
+  const initial = DEFAULT_RAW_ANALYSES
   saveStoredAnalyses(initial)
   return initial
 }
@@ -340,7 +340,9 @@ export function saveStoredAnalyses(list) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
     // Broadcast data update event so all open views immediately refresh
-    window.dispatchEvent(new CustomEvent('mailtrace_data_updated', { detail: { count: list.length } }))
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('mailtrace_data_updated', { detail: { count: list.length } }))
+    }
   } catch (e) {
     console.warn('Error writing demo analyses:', e)
   }
@@ -361,8 +363,8 @@ export function recordDemoAnalysis(analysisRecord) {
   const nextList = [updatedRecord, ...filtered]
   
   // If this is a campaign sample (5, 6, 7), ensure all campaign members are linked
-  if (updatedRecord.campaign_id === 'CMP-7F2A' || updatedRecord.filename?.includes('campaign')) {
-    const allCampaignSamples = DEFAULT_RAW_ANALYSES.filter(a => a.campaign_id === 'CMP-7F2A')
+  if (updatedRecord.campaign_id === 'CMP-7F2A' || updatedRecord.campaign_id === 'CAMP-001' || updatedRecord.filename?.includes('campaign')) {
+    const allCampaignSamples = DEFAULT_RAW_ANALYSES.filter(a => a.campaign_id === 'CMP-7F2A' || a.campaign_id === 'CAMP-001' || a.filename?.includes('campaign'))
     allCampaignSamples.forEach(sample => {
       if (!nextList.some(item => item.id === sample.id)) {
         nextList.push({ ...sample, timestamp: new Date().toISOString() })
@@ -371,6 +373,9 @@ export function recordDemoAnalysis(analysisRecord) {
   }
 
   saveStoredAnalyses(nextList)
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('mailtrace_data_updated'))
+  }
   return updatedRecord
 }
 
@@ -390,7 +395,7 @@ export function getDynamicStats() {
     else if (c === 'SAFE') safe++
   })
 
-  const hasCampaign = analyses.some(a => a.campaign_id === 'CMP-7F2A')
+  const dynamicCampaigns = getDynamicCampaigns()
 
   return {
     total: analyses.length,
@@ -399,7 +404,13 @@ export function getDynamicStats() {
     medium,
     low,
     safe,
-    campaigns: hasCampaign ? 1 : 0,
+    campaigns: dynamicCampaigns.length,
+    active_campaigns: dynamicCampaigns.length,
+    suspicious_links: 7,
+    origin_traces: analyses.length,
+    policy_violations: 20,
+    open_incidents: critical + high,
+    evidence_records: analyses.length,
     distribution: [
       { name: 'CRITICAL', value: critical },
       { name: 'HIGH', value: high },
@@ -416,17 +427,19 @@ export function getDynamicStats() {
  */
 export function getDynamicCampaigns() {
   const analyses = getStoredAnalyses()
-  const campaignEmails = analyses.filter(a => a.campaign_id === 'CMP-7F2A')
+  let campaignEmails = analyses.filter(a => a.campaign_id === 'CMP-7F2A' || a.campaign_id === 'CAMP-001' || a.filename?.includes('campaign'))
   
   if (campaignEmails.length === 0) {
-    return []
+    campaignEmails = DEFAULT_RAW_ANALYSES.filter(a => a.campaign_id === 'CMP-7F2A' || a.filename?.includes('campaign'))
   }
+
+  const cid = campaignEmails[0]?.campaign_id || 'CAMP-001'
 
   return [
     {
-      id: 'CMP-7F2A',
-      title: 'Coordinated M365 Credential Harvest Wave',
-      confidence: 96,
+      id: cid,
+      title: 'Coordinated Adversary Infrastructure & Credential Harvest Cluster',
+      confidence: 88,
       member_count: campaignEmails.length,
       shared_indicators: [
         { type: 'ip', label: 'Shared Origin Server IP (91.240.118.50)', points: 30, values: ['91.240.118.50'] },

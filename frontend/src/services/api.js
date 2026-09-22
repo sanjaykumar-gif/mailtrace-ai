@@ -1,4 +1,4 @@
-// Clean API service layer for MailTrace AI with Real-Time Reactive Demo Store
+// Clean API service layer for MailTrace AI with Real-Time Reactive Demo Store & PS 26106 Endpoints
 import {
   DEFAULT_RAW_ANALYSES,
   getStoredAnalyses,
@@ -12,21 +12,23 @@ const BASE = (import.meta.env.VITE_API_BASE || '/api').replace(/\/$/, '')
 
 export function isDemoMode() {
   const val = localStorage.getItem('mailtrace_demo_mode')
-  return val === null ? true : val === 'true'
+  // Default to false so live backend on :8000 is used by default, but toggleable anytime
+  return val === 'true'
 }
 
 // Simulated delay helper for smooth UI transitions in demo mode
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-async function req(path, { method = 'GET', json, form, timeoutMs = 5000, forceDemo = false } = {}) {
-  // If Demo Mode is explicitly active, handle ALL endpoints directly without waiting for remote network timeouts
+async function req(path, { method = 'GET', json, form, timeoutMs = 15000, forceDemo = false } = {}) {
+  // If Demo Mode is explicitly active, handle ALL endpoints directly
   if (isDemoMode() || forceDemo) {
     if (
       path.startsWith('/analyze/sample/') ||
       (path === '/analyze' && method === 'POST') ||
-      (path === '/analyze/upload' && method === 'POST')
+      (path === '/analyze/upload' && method === 'POST') ||
+      (path === '/analyze/text' && method === 'POST')
     ) {
-      await sleep(300) // Quick smooth delay for the scanner progress bar animation
+      await sleep(300)
     }
     return getDemoFallback(path, method, json)
   }
@@ -71,7 +73,7 @@ async function req(path, { method = 'GET', json, form, timeoutMs = 5000, forceDe
       return getDemoFallback(path, method, json)
     }
     throw new ApiError(
-      'Backend returned HTML instead of JSON. If deployed on Vercel, please ensure VITE_API_BASE is set to your live backend URL in Vercel Project Settings > Environment Variables.',
+      'Backend returned HTML instead of JSON. If deployed on Vercel, please ensure VITE_API_BASE is set to your live backend URL.',
       res.status
     )
   }
@@ -91,7 +93,7 @@ async function req(path, { method = 'GET', json, form, timeoutMs = 5000, forceDe
 }
 
 function getDemoFallback(path, method = 'GET', json = null) {
-  console.log(`[MailTrace Reactive Demo Store] Instant response for: ${method} ${path}`)
+  console.log(`[MailTrace Reactive Demo Store] Fallback for: ${method} ${path}`)
   
   if (path === '/health') {
     const stored = getStoredAnalyses()
@@ -101,6 +103,8 @@ function getDemoFallback(path, method = 'GET', json = null) {
       engine: 'MailTrace AI Demo Sandbox',
       analyses_stored: stored.length,
       campaigns_count: campaigns.length,
+      incidents_count: stored.filter(a => a.risk_score >= 60).length,
+      ledger_events_count: stored.length * 8,
       imap_active: false
     }
   }
@@ -133,7 +137,7 @@ function getDemoFallback(path, method = 'GET', json = null) {
 
   if (path.startsWith('/analyze/sample/')) {
     const filename = decodeURIComponent(path.replace('/analyze/sample/', '')).toLowerCase()
-    let match = DEFAULT_RAW_ANALYSES[1] // default PayPal critical
+    let match = DEFAULT_RAW_ANALYSES[1]
     if (filename.includes('1_') || filename.includes('safe')) match = DEFAULT_RAW_ANALYSES[0]
     else if (filename.includes('2_') || filename.includes('paypal') || filename.includes('credential')) match = DEFAULT_RAW_ANALYSES[1]
     else if (filename.includes('3_') || filename.includes('bec') || filename.includes('impersonation')) match = DEFAULT_RAW_ANALYSES[2]
@@ -142,11 +146,10 @@ function getDemoFallback(path, method = 'GET', json = null) {
     else if (filename.includes('6_') || filename.includes('billing')) match = DEFAULT_RAW_ANALYSES[5]
     else if (filename.includes('7_') || filename.includes('account')) match = DEFAULT_RAW_ANALYSES[6]
 
-    // Record into persistent demo store so it immediately reflects across Dashboard, Forensics, History, and Attack DNA
     return recordDemoAnalysis(match)
   }
 
-  if (path === '/analyze' || path === '/analyze/upload') {
+  if (path === '/analyze' || path === '/analyze/text' || path === '/analyze/upload') {
     let match = DEFAULT_RAW_ANALYSES[1]
     if (json?.content && json.content.toLowerCase().includes('safe')) {
       match = DEFAULT_RAW_ANALYSES[0]
@@ -172,41 +175,68 @@ function getDemoFallback(path, method = 'GET', json = null) {
     return found
   }
 
-  if (path === '/samples') {
+  if (path === '/incidents') {
+    const stored = getStoredAnalyses()
+    const incs = stored
+      .filter(a => a.risk_score >= 60 || a.incident)
+      .map((a, idx) => a.incident || ({
+        id: `INC-2026-${(idx + 1).toString().padStart(3, '0')}`,
+        email_id: a.id,
+        tracking_id: a.tracking_id || `EML-2026-${(idx + 1).toString().padStart(3, '0')}`,
+        subject: a.subject,
+        severity: a.risk_score >= 80 ? 'CRITICAL' : 'HIGH',
+        status: 'OPEN',
+        campaign_id: a.campaign_id,
+        created_at: a.timestamp,
+        updated_at: a.timestamp,
+        assigned_analyst: 'SOC Lead Analyst',
+        trigger_policies: ['Zero-Trust Credential Theft Prevention'],
+        evidence_count: a.indicators?.length || 5,
+        actions_taken: ['QUARANTINE', 'ADMIN_ALERT'],
+        notes: `Auto-triaged threat incident with risk score ${a.risk_score}/100.`
+      }))
+    return { incidents: incs }
+  }
+
+  if (path === '/ledger') {
+    const stored = getStoredAnalyses()
+    const events = []
+    stored.forEach((a, idx) => {
+      const tid = a.tracking_id || `EML-2026-${(idx + 1).toString().padStart(3, '0')}`
+      events.push(
+        { event_id: `EVT-${tid}-01`, timestamp: a.timestamp, event_type: 'EMAIL_INGESTED', email_id: a.id, tracking_id: tid, actor: 'SYSTEM_INGEST', summary: `Ingested ${a.subject}`, sha256_hash: a.sha256 || '8f6561b80a2318e78d9b24281ff296a05c1d2c302fa46259ae6be4612689fa8d' },
+        { event_id: `EVT-${tid}-02`, timestamp: a.timestamp, event_type: 'THREAT_ANALYZED', email_id: a.id, tracking_id: tid, actor: 'THREAT_ENGINE', summary: `Score ${a.risk_score}/100`, sha256_hash: a.sha256 || '8f6561b80a2318e78d9b24281ff296a05c1d2c302fa46259ae6be4612689fa8d' },
+        { event_id: `EVT-${tid}-08`, timestamp: a.timestamp, event_type: 'EVIDENCE_SEALED', email_id: a.id, tracking_id: tid, actor: 'BLOCKCHAIN_NOTARIZER', summary: 'SHA-256 seal notarized on chain', sha256_hash: a.sha256 || '8f6561b80a2318e78d9b24281ff296a05c1d2c302fa46259ae6be4612689fa8d' }
+      )
+    })
+    return { events }
+  }
+
+  if (path === '/geotrace/map') {
     return {
-      samples: [
-        { filename: '1_safe_notice.eml', description: 'Legitimate college placement notice with valid SPF/DKIM.' },
-        { filename: '2_phishing_credential.eml', description: 'Look-alike domain, zero-width chars, and masked link.' },
-        { filename: '3_impersonation_bec.eml', description: 'Executive spoofing and urgency wire-transfer request.' },
-        { filename: '4_invoice_fraud.eml', description: 'Deceptive invoice with URL shorteners and risky payload.' },
-        { filename: '5_campaign_support.eml', description: 'Coordinated attack campaign 1 of 3 (shared infra).' },
-        { filename: '6_campaign_billing.eml', description: 'Coordinated attack campaign 2 of 3 (shared infra).' },
-        { filename: '7_campaign_account.eml', description: 'Coordinated attack campaign 3 of 3 (shared infra).' },
+      points: [
+        { ip: '185.220.101.47', latitude: 50.1109, longitude: 8.6821, country: 'Germany', city: 'Frankfurt am Main', isp: 'Zwiebelfreunde e.V.', hosting: 'Privacy Transit', risk_score: 100, classification: 'CRITICAL', email_count: 3, vpn_indicator: true, confidence: 88 },
+        { ip: '45.155.204.33', latitude: 55.7558, longitude: 37.6173, country: 'Russia', city: 'Moscow', isp: 'Cloud.ru', hosting: 'Cloud Technologies', risk_score: 100, classification: 'CRITICAL', email_count: 1, vpn_indicator: false, confidence: 75 },
+        { ip: '103.75.190.12', latitude: 3.1408, longitude: 101.6852, country: 'Malaysia', city: 'Kuala Lumpur', isp: 'VPSMALAYSIA2', hosting: 'Gigabit Hosting', risk_score: 69, classification: 'HIGH', email_count: 1, vpn_indicator: false, confidence: 75 },
+        { ip: '91.215.85.14', latitude: 55.7558, longitude: 37.6173, country: 'Russia', city: 'Moscow', isp: 'Prospero OOO', hosting: 'Prospero Infrastructure', risk_score: 93, classification: 'CRITICAL', email_count: 1, vpn_indicator: false, confidence: 75 },
+        { ip: '209.85.128.45', latitude: 37.4225, longitude: -122.085, country: 'United States', city: 'Mountain View', isp: 'Google LLC', hosting: 'Google Enterprise', risk_score: 0, classification: 'SAFE', email_count: 1, vpn_indicator: false, confidence: 95 }
       ]
     }
   }
 
-  if (path === '/samples/load') {
-    // Load all 7 default samples into the store
-    saveStoredAnalyses(DEFAULT_RAW_ANALYSES)
-    return { loaded: DEFAULT_RAW_ANALYSES.length, count: DEFAULT_RAW_ANALYSES.length, message: 'Loaded all 7 demo samples into workspace' }
+  if (path === '/privacy') {
+    return { mask_pii: true, mask_ips: false, retention_days: 30, audit_logging_enabled: true }
   }
 
-  if (path === '/reset') {
-    saveStoredAnalyses([])
-    return { success: true, message: 'Cleared demo telemetry store' }
-  }
-
-  if (path === '/imap/status') {
-    return { is_running: false, is_connected: false, connected_user: null, scanned_count: 0, threat_count: 0 }
-  }
-
-  if (path === '/dns/lookup') {
+  if (path === '/policies') {
     return {
-      domain: json?.domain || 'target-domain.example',
-      ip: json?.ip || '185.220.101.42',
-      live_dns: { has_mx: true, mx_records: ['mail.target-domain.example'], spf_record: 'v=spf1 ~all', dmarc_record: 'v=DMARC1; p=reject', dmarc_policy: 'REJECT', status: 'resolved' },
-      live_ip: { ip: json?.ip || '185.220.101.42', is_private: false, country: 'Russian Federation', city: 'Moscow', isp: 'Bulletproof Networks Ltd', org: 'BadActor Autonomous System', as: 'AS44192' }
+      policies: [
+        { id: 'POL-EXEC-IMPERSONATION', name: 'Executive / VIP Impersonation Defense', enabled: true, condition_summary: 'VIP Display Name AND SPF/DMARC Fail', recommended_action: 'QUARANTINE' },
+        { id: 'POL-CREDENTIAL-HARVEST', name: 'Zero-Trust Credential Theft Prevention', enabled: true, condition_summary: 'Credential NLP Score >= 50 OR Destination Mismatch', recommended_action: 'QUARANTINE' },
+        { id: 'POL-FINANCIAL-WIRE', name: 'BEC & Wire Fraud Safeguard', enabled: true, condition_summary: 'Financial NLP Score >= 50 AND External Origin', recommended_action: 'ADMIN_ALERT' },
+        { id: 'POL-MALICIOUS-INFRA', name: 'Anonymized / Tor Relay Ingress Filter', enabled: true, condition_summary: 'IP is Known Tor Exit OR Score >= 80', recommended_action: 'BLOCK_DOMAIN' },
+        { id: 'POL-COORDINATED-CAMPAIGN', name: 'Coordinated Attack Campaign Ingress', enabled: true, condition_summary: 'Campaign Member Count >= 2 AND Confidence >= 75%', recommended_action: 'ADMIN_ALERT' },
+      ]
     }
   }
 
@@ -216,6 +246,7 @@ function getDemoFallback(path, method = 'GET', json = null) {
 function summarizeLocal(a) {
   return {
     id: a.id,
+    tracking_id: a.tracking_id || 'EML-2026-001',
     timestamp: a.timestamp,
     subject: a.subject,
     sender: a.sender,
@@ -223,7 +254,10 @@ function summarizeLocal(a) {
     risk_score: a.risk_score,
     classification: a.classification,
     campaign_id: a.campaign_id,
-    source: a.source
+    source: a.source,
+    origin_ip: a.origin_ip,
+    geotrace: a.geotrace,
+    incident_id: a.incident?.id,
   }
 }
 
@@ -238,9 +272,9 @@ export const api = {
   health: () => req('/health'),
   stats: () => req('/stats'),
   analyses: () => req('/analyses'),
-  analysis: (id) => req(`/analyses/${id}`),
-  deleteAnalysis: (id) => req(`/analyses/${id}`, { method: 'DELETE' }),
-  analyzeText: (content) => req('/analyze', { method: 'POST', json: { content } }),
+  analysis: (id) => req(`/analyses/${encodeURIComponent(id)}`),
+  deleteAnalysis: (id) => req(`/analyses/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  analyzeText: (content) => req('/analyze/text', { method: 'POST', json: { content } }),
   analyzeFile: (file) => {
     const form = new FormData()
     form.append('file', file)
@@ -251,7 +285,31 @@ export const api = {
   loadSamples: () => req('/samples/load', { method: 'POST' }),
   campaigns: () => req('/campaigns'),
   campaign: (id) => req(`/campaigns/${encodeURIComponent(id)}`),
-  reset: () => req('/reset', { method: 'POST' }),
+  reset: () => req('/analyses', { method: 'DELETE' }),
+
+  // Incidents & Cases
+  incidents: () => req('/incidents'),
+  incident: (id) => req(`/incidents/${encodeURIComponent(id)}`),
+  updateIncident: (id, updates) => req(`/incidents/${encodeURIComponent(id)}`, { method: 'PATCH', json: updates }),
+
+  // Security Policies
+  policies: () => req('/policies'),
+  savePolicies: (policies) => req('/policies', { method: 'POST', json: policies }),
+
+  // Ledger & Evidence Custody
+  ledger: () => req('/ledger'),
+  evidence: () => req('/evidence'),
+  custody: (id) => req(`/evidence/${encodeURIComponent(id)}/custody`),
+
+  // GeoTrace Threat Origin Map
+  geotraceMap: () => req('/geotrace/map'),
+
+  // Privacy & Compliance
+  privacy: () => req('/privacy'),
+  updatePrivacy: (cfg) => req('/privacy', { method: 'POST', json: cfg }),
+
+  // Official Report Export
+  exportReport: (id) => req(`/reports/${encodeURIComponent(id)}/export`),
 
   // Live Real-Time Ingestion (IMAP)
   imapConnect: (data) => req('/imap/connect', { method: 'POST', json: data }),
