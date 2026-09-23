@@ -146,7 +146,7 @@ export default function LiveMonitor() {
     try {
       const s = await api.imapStatus()
       setStatus(s)
-      if (s?.username && !username) {
+      if (s?.username && s?.is_running && !username) {
         setUsername(s.username)
       }
       setLoading(false)
@@ -472,9 +472,20 @@ export default function LiveMonitor() {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text-faint)', marginBottom: '0.35rem' }}>
-                Account Email Address
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                <label style={{ fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text-faint)' }}>
+                  Account Email Address
+                </label>
+                {username && (
+                  <button
+                    type="button"
+                    onClick={() => { setUsername(''); setPassword(''); }}
+                    style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, padding: 0 }}
+                  >
+                    ✕ Clear / Change Email
+                  </button>
+                )}
+              </div>
               <input
                 type="email"
                 value={username}

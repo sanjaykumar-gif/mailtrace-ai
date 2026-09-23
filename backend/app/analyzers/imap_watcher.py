@@ -108,6 +108,9 @@ class ImapWatcher:
         self.stop_event.set()
         self.is_running = False
         self.is_connected = False
+        self.username = ''
+        self.password = ''
+        self.host = ''
         if self.thread and self.thread.is_alive():
             self.thread.join(timeout=3)
         self.log_event('Mailbox watcher stopped.', 'INFO')
