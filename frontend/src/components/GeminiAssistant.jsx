@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { api } from "../services/api.js"
 
@@ -139,7 +139,7 @@ export default function GeminiAssistant() {
   const navigate = useNavigate()
   const location = useLocation()
   const [open, setOpen]               = useState(false)
-  const [apiKey, setApiKey]           = useState(() => localStorage.getItem("mailtrace_gemini_key") || "")
+  const [apiKey, setApiKey]           = useState(() => localStorage.getItem("mailtrace_gemini_key") || import.meta.env.VITE_GEMINI_API_KEY || "")
   const [showKey, setShowKey]         = useState(false)
   const [keyDraft, setKeyDraft]       = useState("")
   const [messages, setMessages]       = useState([{

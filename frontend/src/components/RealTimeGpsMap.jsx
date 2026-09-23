@@ -93,7 +93,7 @@ export default function RealTimeGpsMap({ points = [], onSelectPoint = null, refr
         center: [20, 10], zoom: 2, minZoom: 2, maxZoom: 10,
         zoomControl: false, attributionControl: false,
       })
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { subdomains: "abcd", maxZoom: 19 }).addTo(map)
+      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { subdomains: "abcd", maxZoom: 19 }).addTo(map)
       L.control.zoom({ position: "bottomright" }).addTo(map)
       const canvas = canvasRef.current
       if (canvas) {
@@ -191,7 +191,7 @@ export default function RealTimeGpsMap({ points = [], onSelectPoint = null, refr
           <div style={{ width:"8px", height:"8px", borderRadius:"50%", background: isLive?"#22c55e":"#64748b", boxShadow:isLive?"0 0 8px #22c55e":"none", animation:isLive?"gpsPulse 1.6s ease-out infinite":"none" }} />
           <div>
             <div style={{ fontSize:"13px", fontWeight:900, color:"#f8fafc", letterSpacing:".04em" }}>??? REAL-TIME THREAT ORIGIN MAP</div>
-            <div style={{ fontSize:"11px", color:"#64748b", marginTop:"1px" }}>GPS-precision geolocation · {mapPoints.length} active nodes · Leaflet / CartoDB Dark</div>
+            <div style={{ fontSize:"11px", color:"#64748b", marginTop:"1px" }}>GPS-precision geolocation  {mapPoints.length} active nodes  Leaflet / Esri Dark Canvas</div>
           </div>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
@@ -211,7 +211,7 @@ export default function RealTimeGpsMap({ points = [], onSelectPoint = null, refr
             Last sync: {lastRefresh.toLocaleTimeString()}
           </div>
           <div style={{ position:"absolute", top:"12px", left:"12px", zIndex:1000, background:"rgba(6,13,26,0.88)", backdropFilter:"blur(8px)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:"8px", padding:"8px 12px", fontSize:"10px", color:"#94a3b8", display:"flex", flexDirection:"column", gap:"4px" }}>
-            {[["#ef4444","Critical (80–100)"],["#f59e0b","High (50–79)"],["#22d3ee","Medium (20–49)"],["#22c55e","Safe (0–19)"]].map(([c,l]) => (
+            {[["#ef4444","Critical (80100)"],["#f59e0b","High (5079)"],["#22d3ee","Medium (2049)"],["#22c55e","Safe (019)"]].map(([c,l]) => (
               <div key={l} style={{ display:"flex", alignItems:"center", gap:"6px" }}>
                 <div style={{ width:"9px", height:"9px", borderRadius:"50%", background:c, boxShadow:`0 0 6px ${c}` }} />
                 <span>{l}</span>
@@ -280,8 +280,8 @@ export default function RealTimeGpsMap({ points = [], onSelectPoint = null, refr
       </div>
 
       <div style={{ padding:"8px 18px", borderTop:"1px solid rgba(255,255,255,0.05)", background:"rgba(6,13,26,0.9)", display:"flex", justifyContent:"space-between", alignItems:"center", fontSize:"10px", color:"#334155" }}>
-        <span>?? Infrastructure-level geolocation only · Does not establish sender identity</span>
-        <span style={{ color:"#475569" }}>Leaflet · CartoDB Dark Matter · ip-api.com</span>
+        <span>?? Infrastructure-level geolocation only  Does not establish sender identity</span>
+        <span style={{ color:"#475569" }}>Leaflet  Esri Dark Canvas  ip-api.com</span>
       </div>
     </div>
   )

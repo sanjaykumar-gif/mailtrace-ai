@@ -345,6 +345,8 @@ export default function Result() {
             </div>
           </div>
         </div>
+      )}
+
       {activeTab === 'story' && (
         <div>
           <AttackStoryTimeline detail={data} />

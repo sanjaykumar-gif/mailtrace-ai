@@ -65,6 +65,7 @@ def _optional_llm_summary(evidence: dict) -> str | None:
     """Optional LLM rephrase. Only used if env vars are configured; safe to fail."""
     endpoint = os.environ.get('MAILTRACE_LLM_ENDPOINT')
     key = os.environ.get('MAILTRACE_LLM_KEY')
+    model = os.environ.get('MAILTRACE_LLM_MODEL', 'qwen/qwen3.8-27b')
     if not endpoint or not key:
         return None
     prompt = (
@@ -73,15 +74,31 @@ def _optional_llm_summary(evidence: dict) -> str | None:
         'flagged. Do not invent any new indicators.\n\n'
         f'EVIDENCE:\n{json.dumps(evidence, indent=1)}')
     try:
+        if 'chat/completions' in endpoint or 'groq' in endpoint:
+            payload = {
+                'model': model,
+                'messages': [{'role': 'user', 'content': prompt}],
+                'temperature': 0.3,
+                'max_tokens': 300
+            }
+        else:
+            payload = {'prompt': prompt}
+
         req = urllib.request.Request(
             endpoint,
-            data=json.dumps({'prompt': prompt}).encode(),
-            headers={'Authorization': f'Bearer {key}',
-                     'Content-Type': 'application/json'},
+            data=json.dumps(payload).encode('utf-8'),
+            headers={
+                'Authorization': f'Bearer {key}',
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            },
             method='POST')
-        with urllib.request.urlopen(req, timeout=6) as resp:
-            data = json.loads(resp.read().decode())
-            text = data.get('text') or data.get('summary') or ''
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            if 'choices' in data and len(data['choices']) > 0:
+                text = data['choices'][0]['message']['content']
+            else:
+                text = data.get('text') or data.get('summary') or ''
             return text.strip() or None
     except Exception:
         return None

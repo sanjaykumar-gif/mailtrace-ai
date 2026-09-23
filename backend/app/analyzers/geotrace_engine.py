@@ -7,6 +7,7 @@ and computes forensic confidence with legal disclaimers.
 from __future__ import annotations
 
 import ipaddress
+import os
 import re
 from typing import Any
 import requests
@@ -275,7 +276,47 @@ def _cached_geolocate(ip_str: str | None) -> dict[str, Any]:
             "disclaimer": "The earliest reliable IP is geolocated to approximate region.",
         }
 
-    # 2. Try online real-time ip-api.com lookup with fast timeout
+    # 2. Try IPGeolocation.io with API Key if configured
+    geo_key = os.getenv("IPGEOLOCATION_API_KEY") or os.getenv("IP_GEOLOCATION_API_KEY")
+    if geo_key:
+        try:
+            resp = requests.get(
+                f"https://api.ipgeolocation.io/ipgeo?apiKey={geo_key}&ip={ip_str}",
+                timeout=1.5
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                country = data.get("country_name") or "Unknown"
+                if country and country != "Unknown":
+                    return {
+                        "earliest_reliable_ip": ip_str,
+                        "country": country,
+                        "country_code": data.get("country_code2", "XX"),
+                        "region": data.get("state_prov", "Unknown"),
+                        "city": data.get("city", "Unknown"),
+                        "latitude": float(data["latitude"]) if data.get("latitude") else None,
+                        "longitude": float(data["longitude"]) if data.get("longitude") else None,
+                        "isp": data.get("isp", "Unknown"),
+                        "asn": data.get("asn", "Unknown"),
+                        "organization": data.get("organization", data.get("isp", "Unknown")),
+                        "infrastructure": {
+                            "is_hosting": True,
+                            "is_cloud_provider": True,
+                            "is_residential": False,
+                            "is_possible_proxy": False,
+                            "is_known_tor_exit": False,
+                            "is_open_relay": False,
+                            "is_vpn_indicator": False,
+                            "network_type": "Hosting / IP Provider",
+                            "classification_notes": "Resolved via IPGeolocation.io API.",
+                        },
+                        "confidence": 90,
+                        "disclaimer": "The earliest reliable IP is geolocated to approximate region.",
+                    }
+        except Exception:
+            pass
+
+    # 3. Try online real-time ip-api.com lookup with fast timeout
     try:
         resp = requests.get(
             f"http://ip-api.com/json/{ip_str}?fields=status,country,countryCode,regionName,city,lat,lon,isp,org,as,proxy,hosting",
