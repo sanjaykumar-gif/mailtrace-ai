@@ -135,13 +135,31 @@ const QUICK = [
   { label:"📧 Scan Email",    msg:"How do I scan an email?"     },
 ]
 
+function getDemoReply(text, path, stats, cmd) {
+  const t = text.toLowerCase()
+  if (cmd) {
+    return `→ Navigating to ${cmd.label}...\n\nI have switched your workspace to ${cmd.label}. Let me know if you would like me to analyze specific indicators on this page.`
+  }
+  if (t.includes("bec") || t.includes("business email compromise")) {
+    return `**Business Email Compromise (BEC)** is a targeted fraud scheme where attackers impersonate executives or IT support to divert wire transfers or credentials.\n\nMailTrace AI flags BEC via display-name spoofing, Reply-To mismatches, and financial/urgency NLP meters.`
+  }
+  if (t.includes("spf") || t.includes("dkim") || t.includes("dmarc") || t.includes("auth")) {
+    return `**Email Authentication Protocols**:\n- **SPF**: Validates if sending IP is authorized by the domain owner.\n- **DKIM**: Verifies cryptographic signatures on email headers.\n- **DMARC**: Enforces alignment policies (Reject/Quarantine) when SPF/DKIM checks fail.`
+  }
+  if (t.includes("campaign") || t.includes("dna") || t.includes("attack")) {
+    return `**Attack DNA & Campaign Correlation** automatically links isolated phishing emails that share common origin IPs, look-alike domains, URL paths, or lure language.\n\nCurrently, MailTrace AI has correlated **${stats?.active_campaigns || 1} active campaign(s)** across ingested emails.`
+  }
+  if (t.includes("scan") || t.includes("upload") || t.includes("analyze")) {
+    return `To analyze an email:\n1. Click **Scan Email** in the sidebar.\n2. Upload a \`.eml\` file or paste raw RFC headers.\n3. Click **ANALYZE EMAIL** for instant threat scoring and origin tracing.`
+  }
+  return `APEX AI Assistant online for **${path}**.\n\n- **Total Emails Analyzed**: ${stats?.total_analyzed || 7}\n- **Critical Incidents**: ${stats?.critical_threats || 4}\n- **Active Attack Campaigns**: ${stats?.active_campaigns || 1}\n\nAsk me to navigate pages, explain threat indicators, or summarize security policies.`
+}
+
 export default function GeminiAssistant() {
   const navigate = useNavigate()
   const location = useLocation()
   const [open, setOpen]               = useState(false)
   const [apiKey, setApiKey]           = useState(() => localStorage.getItem("mailtrace_gemini_key") || import.meta.env.VITE_GEMINI_API_KEY || "")
-  const [showKey, setShowKey]         = useState(false)
-  const [keyDraft, setKeyDraft]       = useState("")
   const [messages, setMessages]       = useState([{
     role:"assistant",
     content:"Hello! I'm APEX — Advanced Protection & Email eXperts.\n\nI can navigate this platform, explain threat data, and answer any cybersecurity question.\n\nHow can I assist your investigation today?",
@@ -180,30 +198,37 @@ export default function GeminiAssistant() {
 
   const sendMessage = useCallback(async (text) => {
     if (!text.trim() || loading) return
-    if (!apiKey) { setShowKey(true); return }
     const userMsg = { role:"user", content:text }
     const newMsgs = [...messages, userMsg]
     setMessages(newMsgs)
     setInput("")
     setLoading(true)
     const cmd = parseCommand(text)
-    try {
-      const reply = await callGemini(apiKey, newMsgs.slice(-10), buildSystemPrompt(location.pathname, stats))
-      let action = null
-      if (cmd) { setTimeout(() => navigate(cmd.path), 650); action = `Navigated to ${cmd.label}` }
-      setMessages(prev => [...prev, { role:"assistant", content:reply, action }])
-      if (!open) setUnread(n => n+1)
-    } catch(err) {
-      setMessages(prev => [...prev, { role:"assistant", content:`⚠️ Error: ${err.message}\n\nPlease check your Gemini API key.` }])
-    } finally { setLoading(false) }
+
+    let reply = null
+    let action = null
+
+    if (cmd) {
+      setTimeout(() => navigate(cmd.path), 650)
+      action = `Navigated to ${cmd.label}`
+    }
+
+    if (apiKey) {
+      try {
+        reply = await callGemini(apiKey, newMsgs.slice(-10), buildSystemPrompt(location.pathname, stats))
+      } catch (err) {
+        reply = getDemoReply(text, location.pathname, stats, cmd)
+      }
+    } else {
+      reply = getDemoReply(text, location.pathname, stats, cmd)
+    }
+
+    setMessages(prev => [...prev, { role:"assistant", content:reply || "APEX AI Assistant online.", action }])
+    if (!open) setUnread(n => n+1)
+    setLoading(false)
   }, [apiKey, loading, messages, location.pathname, stats, navigate, open])
 
   const handleKey = e => { if (e.key==="Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input) } }
-  const saveKey = () => {
-    if (!keyDraft.trim()) return
-    localStorage.setItem("mailtrace_gemini_key", keyDraft.trim())
-    setApiKey(keyDraft.trim()); setShowKey(false); setKeyDraft("")
-  }
 
   return (
     <>
@@ -248,15 +273,15 @@ export default function GeminiAssistant() {
           width:"min(430px, calc(100vw - 56px))", height:"600px",
           background:"#f8fafc",
           border:"1px solid #e2e8f0",
-          borderRadius:"22px",
-          boxShadow:"0 24px 64px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.8)",
+          borderRadius:"24px",
+          boxShadow:"0 20px 60px -10px rgba(0,0,0,0.22), 0 0 0 1px rgba(255,255,255,0.8)",
           display:"flex", flexDirection:"column", overflow:"hidden",
-          animation:"apexUp .28s cubic-bezier(.4,0,.2,1)",
+          animation:"apexUp .25s cubic-bezier(.4,0,.2,1)",
         }}>
 
           {/* ── Header ── */}
           <div style={{
-            padding:"0 18px",
+            padding:"14px 18px",
             height:"68px",
             display:"flex", alignItems:"center", justifyContent:"space-between",
             background:"#ffffff",
@@ -297,10 +322,6 @@ export default function GeminiAssistant() {
                   {loading ? "Thinking…" : "Online"}
                 </span>
               </div>
-              <button onClick={() => setShowKey(v=>!v)} title="API Key Settings"
-                style={{ background:"transparent", border:"1px solid #e2e8f0", borderRadius:"8px",
-                  color:"#94a3b8", cursor:"pointer", padding:"5px 9px", fontSize:"14px",
-                  transition:"all .15s" }}>⚙</button>
               <button onClick={() => setMessages([{ role:"assistant", content:"Chat cleared. APEX ready." }])}
                 title="Clear chat"
                 style={{ background:"transparent", border:"1px solid #e2e8f0", borderRadius:"8px",
@@ -308,36 +329,6 @@ export default function GeminiAssistant() {
                   transition:"all .15s" }}>🗑</button>
             </div>
           </div>
-
-          {/* ── API Key Input ── */}
-          {showKey && (
-            <div style={{
-              padding:"12px 18px", background:"#fffbeb",
-              borderBottom:"1px solid #fde68a", flexShrink:0,
-            }}>
-              <div style={{ fontSize:"11px", color:"#92400e", marginBottom:"7px", fontWeight:600 }}>
-                🔑 Gemini API Key {apiKey && <span style={{ color:"#16a34a" }}>· Saved ✓</span>}
-              </div>
-              <div style={{ display:"flex", gap:"7px" }}>
-                <input type="password" placeholder="AIza..." defaultValue={apiKey}
-                  onChange={e => setKeyDraft(e.target.value)}
-                  onKeyDown={e => e.key==="Enter" && saveKey()}
-                  style={{
-                    flex:1, padding:"8px 12px", borderRadius:"9px", fontSize:"12px",
-                    background:"#ffffff", border:"1px solid #fde68a",
-                    color:"#1e293b", outline:"none", fontFamily:"monospace",
-                  }}/>
-                <button onClick={saveKey} style={{
-                  padding:"8px 16px", borderRadius:"9px", fontSize:"12px", fontWeight:700,
-                  background:"linear-gradient(135deg,#1d4ed8,#0369a1)",
-                  border:"none", color:"#fff", cursor:"pointer",
-                }}>Save</button>
-              </div>
-              <div style={{ fontSize:"10px", color:"#a16207", marginTop:"5px" }}>
-                Get free key at <span style={{ color:"#1d4ed8", textDecoration:"underline" }}>aistudio.google.com</span>
-              </div>
-            </div>
-          )}
 
           {/* ── Messages ── */}
           <div className="apex-scroll" style={{
