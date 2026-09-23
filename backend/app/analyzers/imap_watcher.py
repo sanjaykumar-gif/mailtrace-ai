@@ -92,17 +92,26 @@ class ImapWatcher:
         return True, 'Connected successfully. Live monitoring active.'
 
     def _test_connection(self) -> tuple[bool, str]:
+        pwd = (self.password or '').replace(' ', '').strip()
+        user = (self.username or '').strip()
         try:
             if self.use_ssl:
-                client = imaplib.IMAP4_SSL(self.host, self.port, timeout=10)
+                client = imaplib.IMAP4_SSL(self.host, self.port, timeout=25)
             else:
-                client = imaplib.IMAP4(self.host, self.port, timeout=10)
-            client.login(self.username, self.password)
+                client = imaplib.IMAP4(self.host, self.port, timeout=25)
+            client.login(user, pwd)
             client.select(self.folder, readonly=True)
             client.logout()
             return True, 'Success'
+        except imaplib.IMAP4.error as exc:
+            err_str = str(exc)
+            if 'AUTHENTICATIONFAILED' in err_str or 'Invalid credentials' in err_str or 'Failure' in err_str:
+                return False, 'AUTHENTICATION FAILED: Invalid credentials. For Gmail/Outlook, make sure you are using a 16-character App Password (not your regular account password).'
+            return False, f'IMAP Error: {err_str}'
+        except TimeoutError:
+            return False, 'Connection timed out while contacting IMAP server. Check network or server status.'
         except Exception as exc:
-            return False, str(exc)
+            return False, f'Connection failed ({type(exc).__name__}): {str(exc)}'
 
     def stop(self):
         self.stop_event.set()
@@ -131,13 +140,15 @@ class ImapWatcher:
             self.stop_event.wait(self.poll_interval)
 
     def _fetch_and_process(self, limit: int = 5) -> dict:
+        pwd = (self.password or '').replace(' ', '').strip()
+        user = (self.username or '').strip()
         try:
             if self.use_ssl:
-                client = imaplib.IMAP4_SSL(self.host, self.port, timeout=10)
+                client = imaplib.IMAP4_SSL(self.host, self.port, timeout=25)
             else:
-                client = imaplib.IMAP4(self.host, self.port, timeout=10)
+                client = imaplib.IMAP4(self.host, self.port, timeout=25)
 
-            client.login(self.username, self.password)
+            client.login(user, pwd)
             client.select(self.folder, readonly=False)
 
             search_criteria = 'UNSEEN' if self.only_unread else 'ALL'

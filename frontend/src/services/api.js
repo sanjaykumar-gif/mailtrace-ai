@@ -19,7 +19,7 @@ export function isDemoMode() {
 // Simulated delay helper for smooth UI transitions in demo mode
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-async function req(path, { method = 'GET', json, form, timeoutMs = 15000, forceDemo = false } = {}) {
+async function req(path, { method = 'GET', json, form, timeoutMs = 30000, forceDemo = false } = {}) {
   // If Demo Mode is explicitly active, handle ALL endpoints directly
   if (isDemoMode() || forceDemo) {
     if (
