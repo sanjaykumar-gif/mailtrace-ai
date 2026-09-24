@@ -144,7 +144,24 @@ class Store:
 
     def get_analysis(self, analysis_id: str) -> dict[str, Any] | None:
         with self._lock:
-            return self._analyses.get(str(analysis_id))
+            aid = str(analysis_id).strip()
+            if aid in self._analyses:
+                return self._analyses[aid]
+            aid_lower = aid.lower()
+            for a in self._analyses.values():
+                if str(a.get('tracking_id', '')).lower() == aid_lower:
+                    return a
+                if str(a.get('id', '')).lower() == aid_lower:
+                    return a
+                if str(a.get('sha256', '')).lower() == aid_lower:
+                    return a
+                if str(a.get('sha1', '')).lower() == aid_lower:
+                    return a
+                rec_id = str(a.get('id', '')).lower()
+                rec_track = str(a.get('tracking_id', '')).lower()
+                if len(aid_lower) >= 4 and (rec_id.startswith(aid_lower) or rec_track.startswith(aid_lower) or aid_lower in rec_track):
+                    return a
+            return None
 
     def find_by_sha1(self, sha1: str) -> dict[str, Any] | None:
         with self._lock:
@@ -193,7 +210,17 @@ class Store:
 
     def get_campaign(self, campaign_id: str) -> dict[str, Any] | None:
         with self._lock:
-            return self._campaigns.get(str(campaign_id))
+            cid = str(campaign_id).strip()
+            if cid in self._campaigns:
+                return self._campaigns[cid]
+            cid_lower = cid.lower()
+            for c in self._campaigns.values():
+                if str(c.get('id', '')).lower() == cid_lower:
+                    return c
+                for m in c.get('members', []):
+                    if str(m.get('id', '')).lower() == cid_lower or str(m.get('tracking_id', '')).lower() == cid_lower:
+                        return c
+            return None
 
     def save_campaigns(self, campaigns: list[dict[str, Any]]) -> None:
         with self._lock:

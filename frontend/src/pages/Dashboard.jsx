@@ -353,6 +353,7 @@ export default function Dashboard() {
                     <th>Classification</th>
                     <th>Campaign</th>
                     <th>Timestamp</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -372,30 +373,54 @@ export default function Dashboard() {
                           )}
                         </div>
                       </td>
-                      <td className="mono" style={{ fontSize: '11.5px', color: 'var(--text-faint)' }}>
-                        {r.origin_ip || '—'}
+                      <td className="mono" style={{ fontSize: '11.5px' }}>
+                        {r.origin_ip ? (
+                          <span
+                            onClick={(e) => { e.stopPropagation(); navigate('/geotrace') }}
+                            title="Inspect IP Geolocation"
+                            style={{ color: '#38bdf8', cursor: 'pointer', textDecoration: 'underline' }}
+                          >
+                            {r.origin_ip}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-faint)' }}>—</span>
+                        )}
                       </td>
                       <td className="mono" style={{ fontWeight: 900, fontSize: '15px' }}>{r.risk_score}</td>
                       <td><RiskBadge value={r.classification} /></td>
                       <td>
                         {r.campaign_id ? (
-                          <span style={{
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            fontFamily: 'var(--font-mono)',
-                            color: '#fbbf24',
-                            background: 'rgba(251, 191, 36, 0.12)',
-                            border: '1px solid rgba(251, 191, 36, 0.3)',
-                            padding: '2px 7px',
-                            borderRadius: '4px'
-                          }}>
-                            {r.campaign_id}
+                          <span
+                            onClick={(e) => { e.stopPropagation(); navigate(`/attack-dna/${r.campaign_id}`) }}
+                            title="View Attack DNA Cluster"
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              fontFamily: 'var(--font-mono)',
+                              color: '#fbbf24',
+                              background: 'rgba(251, 191, 36, 0.12)',
+                              border: '1px solid rgba(251, 191, 36, 0.3)',
+                              padding: '2px 7px',
+                              borderRadius: '4px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {r.campaign_id} ↗
                           </span>
                         ) : (
                           <span className="faint">—</span>
                         )}
                       </td>
                       <td className="muted" style={{ fontSize: '11.5px' }}>{fmtDate(r.timestamp)}</td>
+                      <td>
+                        <button
+                          className="btn btn-sm btn-primary"
+                          onClick={(e) => { e.stopPropagation(); navigate(`/result/${r.id}`) }}
+                          style={{ fontSize: '11px', padding: '4px 8px', fontWeight: 800 }}
+                        >
+                          Inspect 🔍
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
