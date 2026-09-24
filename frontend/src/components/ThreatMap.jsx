@@ -24,10 +24,12 @@ function riskGlow(score) {
   return 'rgba(34, 197, 94, 0.7)'
 }
 
+const CARTO_KEY = import.meta.env.VITE_CARTO_API_KEY || 'cb1_3wxa_1_922fc3af594394cccd613eea'
+
 const TILE_PROVIDERS = {
   voyager: {
     name: '🌍 Natural Atlas (Default)',
-    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    url: `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?api_key=${CARTO_KEY}`,
     options: { subdomains: 'abcd', maxZoom: 19, attribution: '© OpenStreetMap contributors, © CARTO' }
   },
   topo: {
@@ -47,7 +49,7 @@ const TILE_PROVIDERS = {
   },
   dark: {
     name: '🌑 Dark Cyber',
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    url: `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?api_key=${CARTO_KEY}`,
     options: { subdomains: 'abcd', maxZoom: 19, attribution: '© CARTO' }
   }
 }

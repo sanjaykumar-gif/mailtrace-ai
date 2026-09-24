@@ -84,7 +84,8 @@ export default function RealTimeGpsMap({ points = [], onSelectPoint = null, refr
         center: [20, 10], zoom: 2, minZoom: 2, maxZoom: 10,
         zoomControl: false, attributionControl: false,
       })
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", { subdomains: "abcd", maxZoom: 19, attribution: "© OpenStreetMap contributors, © CARTO" }).addTo(map)
+      const cartoKey = import.meta.env.VITE_CARTO_API_KEY || 'cb1_3wxa_1_922fc3af594394cccd613eea'
+      L.tileLayer(`https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?api_key=${cartoKey}`, { subdomains: "abcd", maxZoom: 19, attribution: "© OpenStreetMap contributors, © CARTO" }).addTo(map)
       L.control.zoom({ position: "bottomright" }).addTo(map)
       const canvas = canvasRef.current
       if (canvas) {
