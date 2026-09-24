@@ -22,26 +22,29 @@ export default function InfrastructureGraph({ detail }) {
 
     if (!detail) return { nodes: [], links: [] }
 
-    const senderEmail = detail.sender || "unknown@attacker.com"
-    const senderDomain = senderEmail.split("@")[1] || "unknown-domain.com"
-    const originIp = detail.geotrace?.ip || detail.origin_ip || "185.220.101.5"
-    const country = detail.geotrace?.country || "Russia"
-    const ispName = detail.geotrace?.isp || detail.geotrace?.asn || "AS209874 Bulletproof Host"
-    const urls = detail.urls || detail.extracted_urls || (detail.indicators?.filter(i => i.label?.toLowerCase().includes("url") || i.label?.toLowerCase().includes("link")).map(i => i.evidence) || ["http://secure-update-portal.net/login"])
-    const cluster = detail.attribution?.cluster || detail.attribution?.campaign_name || "APT-Phish-Storm"
+    const senderEmail = typeof detail.sender === 'string'
+      ? detail.sender
+      : (detail.sender?.address || detail.sender_address || "unknown@attacker.com")
+    const senderDomain = detail.sender_domain || (senderEmail.includes("@") ? senderEmail.split("@")[1] : senderEmail) || "unknown-domain.com"
+    const originIp = detail.geotrace?.earliest_reliable_ip || detail.geotrace?.ip || detail.origin_ip || "185.220.101.5"
+    const country = detail.geotrace?.country || "Germany"
+    const ispName = detail.geotrace?.isp || detail.geotrace?.asn || "Hosting Transit Facility"
+    const rawUrls = detail.urls || detail.extracted_urls || []
+    const urls = rawUrls.map(u => typeof u === 'string' ? u : (u.url || u.href || '')).filter(Boolean)
+    const cluster = detail.campaign_id || detail.attribution?.cluster || detail.attribution?.campaign_name || (detail.campaign ? detail.campaign.id : "CAMP-001")
 
     // 1. Central Email Node
     const centerNode = {
       id: "email_main",
       type: "email",
       label: detail.subject ? (detail.subject.length > 24 ? detail.subject.slice(0, 24) + "..." : detail.subject) : "Malicious Email",
-      subtext: `ID: ${detail.id ? detail.id.slice(0, 8) : "MLT-8921"}`,
+      subtext: `Ref: ${detail.tracking_id || (detail.id ? detail.id.slice(0, 8) : "MLT-8921")}`,
       details: {
         Subject: detail.subject || "Urgent Account Verification",
         Sender: senderEmail,
-        Recipient: detail.recipient || "victim@enterprise.com",
-        "Risk Score": `${detail.risk_score || 88}/100`,
-        Verdict: detail.verdict || "MALICIOUS"
+        Recipient: typeof detail.recipient === 'string' ? detail.recipient : (detail.recipient?.address || detail.recipient || "victim@enterprise.com"),
+        "Risk Score": `${detail.risk_score ?? 88}/100`,
+        Verdict: detail.classification || detail.verdict || "CRITICAL"
       },
       x: 400,
       y: 250,

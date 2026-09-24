@@ -10,6 +10,7 @@ import ForensicReportModal from '../components/ForensicReportModal.jsx'
 import ExplainableScore from '../components/ExplainableScore.jsx'
 import AttackStoryTimeline from '../components/AttackStoryTimeline.jsx'
 import InfrastructureGraph from '../components/InfrastructureGraph.jsx'
+import PageGuideModal from '../components/PageGuideModal.jsx'
 
 export default function Result() {
   const { id } = useParams()
@@ -145,10 +146,12 @@ export default function Result() {
       }}>
         {/* Score Gauge */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <ScoreGauge score={data.risk_score} size={130} />
-          <div style={{ marginTop: '6px' }}>
-            <RiskBadge value={data.classification} />
-          </div>
+          <ScoreGauge 
+            score={data.risk_score} 
+            classification={data.classification} 
+            probability={data.explanation?.phishing_probability} 
+            threatType={data.explanation?.threat_type} 
+          />
         </div>
 
         {/* Threat Verdict & Executive Summary */}

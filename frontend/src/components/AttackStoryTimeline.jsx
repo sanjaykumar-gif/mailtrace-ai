@@ -1,26 +1,39 @@
-﻿import { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { fmtDate } from "../services/api.js"
 
-function buildSteps(data) {
+function buildSteps(raw) {
+  const data = raw || {}
   const ex = data.explanation || {}
   const geo = data.geotrace || {}
   const nlp = data.nlp_analysis || {}
   const auth = data.auth || {}
-  const links = data.urls || []
+  const links = Array.isArray(data.urls) ? data.urls : []
   const ts = data.timestamp
 
   const steps = []
 
+  const senderName = typeof data.sender === 'object' ? data.sender?.name : 'Unknown'
+  const senderAddr = typeof data.sender === 'object' ? (data.sender?.address || data.sender_address) : (data.sender || '—')
+
   steps.push({
-    icon:"📧", color:"#38bdf8", phase:"PHASE 1 — EMAIL RECEIVED",
-    title:"Suspicious Email Arrived",
-    detail:`Subject: "${data.subject || "(No Subject)"}" · From: ${data.sender?.name || "Unknown"} <${data.sender?.address || "—"}>`,
-    time: ts, status:"confirmed",
+    icon: "📧", color: "#38bdf8", phase: "PHASE 1 — EMAIL RECEIVED",
+    title: "Suspicious Email Arrived",
+    detail: `Subject: "${data.subject || "(No Subject)"}" · From: ${senderName || "Unknown"} <${senderAddr || "—"}>`,
+    time: ts, status: "confirmed",
   })
 
-  const authFails = [auth.spf==="fail"&&"SPF",auth.dkim==="fail"&&"DKIM",auth.dmarc==="fail"&&"DMARC"].filter(Boolean)
+  const spfStatus = String(typeof auth.spf === 'string' ? auth.spf : (auth.spf?.status || '')).toLowerCase()
+  const dkimStatus = String(typeof auth.dkim === 'string' ? auth.dkim : (auth.dkim?.status || '')).toLowerCase()
+  const dmarcStatus = String(typeof auth.dmarc === 'string' ? auth.dmarc : (auth.dmarc?.status || '')).toLowerCase()
+
+  const authFails = [
+    spfStatus.includes("fail") && "SPF",
+    dkimStatus.includes("fail") && "DKIM",
+    dmarcStatus.includes("fail") && "DMARC"
+  ].filter(Boolean)
+
   steps.push({
-    icon:"🔐", color: authFails.length ? "#ef4444" : "#22c55e", phase:"PHASE 2 — AUTHENTICATION ANALYSIS",
+    icon: "🔐", color: authFails.length ? "#ef4444" : "#22c55e", phase: "PHASE 2 — AUTHENTICATION ANALYSIS",
     title: authFails.length ? `Authentication FAILED — ${authFails.join(" + ")} rejected` : "Authentication Passed",
     detail: authFails.length
       ? `${authFails.join(", ")} verification failed. This email was NOT authorized by the domain owner. Indicates spoofing or compromised relay.`
@@ -30,23 +43,23 @@ function buildSteps(data) {
 
   if (geo.earliest_reliable_ip || data.origin_ip) {
     steps.push({
-      icon:"🌍", color:"#f97316", phase:"PHASE 3 — GEOLOCATION TRACED",
-      title:`Origin Traced to ${geo.city ? geo.city + ", " : ""}${geo.country || "Unknown"}`,
-      detail:`Sending IP: ${geo.earliest_reliable_ip || data.origin_ip} · ISP: ${geo.isp || "Unknown"} · Network: ${geo.infrastructure?.network_type || "Unknown"} · Confidence: ${geo.confidence || 75}%`,
-      time: ts, status: geo.risk_label === "TOR" ? "critical" : "warning",
+      icon: "🌍", color: "#f97316", phase: "PHASE 3 — GEOLOCATION TRACED",
+      title: `Origin Traced to ${geo.city ? geo.city + ", " : ""}${geo.country || "Unknown"}`,
+      detail: `Sending IP: ${geo.earliest_reliable_ip || data.origin_ip} · ISP: ${geo.isp || "Unknown"} · Network: ${geo.infrastructure?.network_type || "Hosting / VPS"} · Confidence: ${geo.confidence || 75}%`,
+      time: ts, status: geo.risk_label === "TOR" || geo.infrastructure?.is_known_tor_exit ? "critical" : "warning",
     })
   }
 
   const nlpScore = nlp.social_engineering_score || 0
   if (nlpScore > 10) {
     const dominant = [
-      nlp.urgency_language?.level !== "LOW" && `urgency (${nlp.urgency_language?.score})`,
-      nlp.credential_harvesting?.level !== "LOW" && `credential harvesting (${nlp.credential_harvesting?.score})`,
-      nlp.impersonation_language?.level !== "LOW" && `impersonation (${nlp.impersonation_language?.score})`,
+      nlp.urgency_language?.level !== "LOW" && `urgency (${nlp.urgency_language?.score || 40})`,
+      nlp.credential_harvesting?.level !== "LOW" && `credential harvesting (${nlp.credential_harvesting?.score || 35})`,
+      nlp.impersonation_language?.level !== "LOW" && `impersonation (${nlp.impersonation_language?.score || 30})`,
     ].filter(Boolean)
     steps.push({
-      icon:"🧠", color:"#a78bfa", phase:"PHASE 4 — NLP THREAT ANALYSIS",
-      title:"Social Engineering Language Detected",
+      icon: "🧠", color: "#a78bfa", phase: "PHASE 4 — NLP THREAT ANALYSIS",
+      title: "Social Engineering Language Detected",
       detail: dominant.length
         ? `AI detected: ${dominant.join(", ")}. ${nlp.summary || ""}`
         : `Composite social engineering score: ${nlpScore}/100. ${nlp.summary || ""}`,
@@ -54,22 +67,22 @@ function buildSteps(data) {
     })
   }
 
-  const malLinks = links.filter(u => u.suspicious || u.malicious || (u.risk_score || 0) >= 50)
+  const malLinks = links.filter(u => typeof u === 'object' && (u.suspicious || u.malicious || (u.risk_score || 0) >= 50 || u.destination_mismatch))
   if (malLinks.length > 0) {
     steps.push({
-      icon:"🔗", color:"#ef4444", phase:"PHASE 5 — MALICIOUS URL DISCOVERED",
-      title:`${malLinks.length} Malicious Link${malLinks.length > 1 ? "s" : ""} Found`,
-      detail:`URLs: ${malLinks.slice(0,2).map(u=>u.url||u.href||u).join(", ")}${malLinks.length>2?` +${malLinks.length-2} more`:""}`,
-      time: ts, status:"critical",
+      icon: "🔗", color: "#ef4444", phase: "PHASE 5 — MALICIOUS URL DISCOVERED",
+      title: `${malLinks.length} Malicious Link${malLinks.length > 1 ? "s" : ""} Found`,
+      detail: `URLs: ${malLinks.slice(0, 2).map(u => typeof u === 'string' ? u : (u.url || u.href || '')).join(", ")}${malLinks.length > 2 ? ` +${malLinks.length - 2} more` : ""}`,
+      time: ts, status: "critical",
     })
   }
 
   if (data.campaign_id) {
     steps.push({
-      icon:"🧬", color:"#fbbf24", phase:"PHASE 6 — CAMPAIGN ATTRIBUTION",
-      title:`Linked to Campaign Cluster: ${data.campaign_id}`,
-      detail:"Infrastructure fingerprint matches active phishing campaign. Multiple emails share origin IP, lure theme, and domain registration patterns.",
-      time: ts, status:"warning",
+      icon: "🧬", color: "#fbbf24", phase: "PHASE 6 — CAMPAIGN ATTRIBUTION",
+      title: `Linked to Campaign Cluster: ${data.campaign_id}`,
+      detail: "Infrastructure fingerprint matches active phishing campaign. Multiple emails share origin IP, lure theme, and domain registration patterns.",
+      time: ts, status: "warning",
     })
   }
 
@@ -77,9 +90,9 @@ function buildSteps(data) {
   steps.push({
     icon: score >= 80 ? "🚨" : score >= 50 ? "⚠️" : "✅",
     color: score >= 80 ? "#ef4444" : score >= 50 ? "#f97316" : "#22c55e",
-    phase:"PHASE 7 — SOC VERDICT",
-    title:`Risk Score: ${score}/100 — ${data.classification || "UNDER REVIEW"}`,
-    detail: ex.action || (score >= 80 ? "QUARANTINE & BLOCK DOMAIN — trigger automated gateway containment" : score >= 50 ? "FLAG & MONITOR — escalate to Tier-2 analyst review" : "ALLOW WITH AUDIT LOG — standard monitoring continues"),
+    phase: "PHASE 7 — SOC VERDICT",
+    title: `Risk Score: ${score}/100 — ${data.classification || "UNDER REVIEW"}`,
+    detail: ex.action || ex.recommended_action || (score >= 80 ? "QUARANTINE & BLOCK DOMAIN — trigger automated gateway containment" : score >= 50 ? "FLAG & MONITOR — escalate to Tier-2 analyst review" : "ALLOW WITH AUDIT LOG — standard monitoring continues"),
     time: ts, status: score >= 80 ? "critical" : score >= 50 ? "warning" : "clean",
   })
 
@@ -87,20 +100,21 @@ function buildSteps(data) {
 }
 
 const STATUS_STYLES = {
-  critical: { dot:"#ef4444", line:"rgba(239,68,68,0.3)", bg:"rgba(239,68,68,0.06)" },
-  warning:  { dot:"#f97316", line:"rgba(249,115,22,0.3)", bg:"rgba(249,115,22,0.06)" },
-  clean:    { dot:"#22c55e", line:"rgba(34,197,94,0.3)",  bg:"rgba(34,197,94,0.06)"  },
-  confirmed:{ dot:"#38bdf8", line:"rgba(56,189,248,0.3)", bg:"rgba(56,189,248,0.06)" },
+  critical: { dot: "#ef4444", line: "rgba(239,68,68,0.3)", bg: "rgba(239,68,68,0.06)" },
+  warning:  { dot: "#f97316", line: "rgba(249,115,22,0.3)", bg: "rgba(249,115,22,0.06)" },
+  clean:    { dot: "#22c55e", line: "rgba(34,197,94,0.3)",  bg: "rgba(34,197,94,0.06)"  },
+  confirmed:{ dot: "#38bdf8", line: "rgba(56,189,248,0.3)", bg: "rgba(56,189,248,0.06)" },
 }
 
-export default function AttackStoryTimeline({ data }) {
+export default function AttackStoryTimeline({ data, detail }) {
   const [visible, setVisible] = useState(0)
-  const steps = buildSteps(data)
+  const item = data || detail || {}
+  const steps = buildSteps(item)
 
   useEffect(() => {
     setVisible(0)
-    steps.forEach((_, i) => setTimeout(() => setVisible(v => Math.max(v, i+1)), 120 * i))
-  }, [data.id]) // eslint-disable-line
+    steps.forEach((_, i) => setTimeout(() => setVisible(v => Math.max(v, i + 1)), 120 * i))
+  }, [item.id]) // eslint-disable-line
 
   return (
     <div style={{ padding:"4px 0" }}>

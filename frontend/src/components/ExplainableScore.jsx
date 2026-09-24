@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 
 const FACTOR_ICONS = { auth:"🔐", domain:"🌐", link:"🔗", nlp:"🧠", geo:"📍", header:"📜", campaign:"🧬", default:"⚠️" }
 
@@ -10,12 +10,22 @@ function barColor(pts, maxPts) {
   return "#22c55e"
 }
 
+function getAuthStatus(val) {
+  if (!val) return ''
+  if (typeof val === 'string') return val.toLowerCase()
+  if (typeof val === 'object' && val.status) return String(val.status).toLowerCase()
+  return ''
+}
+
 function buildFactors(indicators, explanation, auth, nlp, geotrace) {
   const factors = []
   const authFails = []
-  if (auth?.spf === "fail" || auth?.spf === "softfail") authFails.push("SPF")
-  if (auth?.dkim === "fail") authFails.push("DKIM")
-  if (auth?.dmarc === "fail") authFails.push("DMARC")
+  const spfStatus = getAuthStatus(auth?.spf)
+  const dkimStatus = getAuthStatus(auth?.dkim)
+  const dmarcStatus = getAuthStatus(auth?.dmarc)
+  if (spfStatus === "fail" || spfStatus === "softfail") authFails.push("SPF")
+  if (dkimStatus === "fail") authFails.push("DKIM")
+  if (dmarcStatus === "fail") authFails.push("DMARC")
   if (authFails.length) factors.push({ type:"auth", label:`Authentication Failure (${authFails.join(", ")})`, evidence:`Email failed ${authFails.join(" + ")} — sender not authorized`, pts: authFails.length * 10, maxPts:30 })
 
   const domainPts = indicators?.find(i => i.label?.toLowerCase().includes("domain"))?.points || 0
