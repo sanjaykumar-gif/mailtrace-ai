@@ -248,41 +248,152 @@ def _cached_geolocate(ip_str: str | None) -> dict[str, Any]:
             "disclaimer": "The earliest reliable IP is geolocated to approximate region. This is infrastructure-level intelligence and does not establish the physical location or identity of the sender.",
         }
 
-    # Skip external query for documentation / private test IPs
-    if ip_str.startswith(("192.0.2.", "198.51.100.", "203.0.113.", "10.", "192.168.", "127.")):
+    # 1. For documentation / private test IPs, return simulated threat lab network
+    if ip_str.startswith(("10.", "192.168.", "127.", "172.16.", "172.17.", "172.18.", "172.19.", "172.2", "172.30.", "172.31.")):
         return {
             "earliest_reliable_ip": ip_str,
-            "country": "United States",
-            "country_code": "US",
-            "region": "California",
-            "city": "San Francisco",
-            "latitude": 37.7749,
-            "longitude": -122.4194,
-            "isp": "Security Research & Emulation ASN",
-            "asn": "AS65530",
-            "organization": "Threat Lab Infrastructure",
+            "country": "Internal Network",
+            "country_code": "LAN",
+            "region": "Private Subnet",
+            "city": "Private Relay Hop",
+            "latitude": 0.0,
+            "longitude": 0.0,
+            "isp": "Local Area Network / RFC 1918",
+            "asn": "Private LAN",
+            "organization": "Internal Infrastructure Relay",
             "infrastructure": {
-                "is_hosting": True,
-                "is_cloud_provider": True,
+                "is_hosting": False,
+                "is_cloud_provider": False,
                 "is_residential": False,
                 "is_possible_proxy": False,
                 "is_known_tor_exit": False,
                 "is_open_relay": False,
                 "is_vpn_indicator": False,
-                "network_type": "Hosting / Cloud VPS",
-                "classification_notes": "Identified as cloud hosting infrastructure.",
+                "network_type": "Private LAN Hop (RFC 1918)",
+                "classification_notes": "Private internal network hop before public gateway.",
             },
-            "confidence": 75,
+            "confidence": 99,
+            "disclaimer": "Internal private network hop extracted from local routing chain.",
+        }
+
+    # 2. Try primary online real-time ip-api.com lookup
+    try:
+        resp = requests.get(
+            f"http://ip-api.com/json/{ip_str}?fields=status,message,country,countryCode,regionName,city,lat,lon,isp,org,as,proxy,hosting",
+            headers={"User-Agent": "MailTraceAI-SOC-Sentinel/2.0"},
+            timeout=2.5
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("status") == "success":
+                is_hosting = bool(data.get("hosting"))
+                is_proxy = bool(data.get("proxy"))
+                net_type = "Hosting / Cloud VPS" if is_hosting else ("Proxy / VPN Relay" if is_proxy else "Broadband / Residential ISP")
+                return {
+                    "earliest_reliable_ip": ip_str,
+                    "country": data.get("country") or "Unknown",
+                    "country_code": data.get("countryCode") or "XX",
+                    "region": data.get("regionName") or "Unknown",
+                    "city": data.get("city") or "Unknown",
+                    "latitude": data.get("lat"),
+                    "longitude": data.get("lon"),
+                    "isp": data.get("isp") or "Unknown",
+                    "asn": data.get("as") or "Unknown",
+                    "organization": data.get("org") or data.get("isp") or "Unknown",
+                    "infrastructure": {
+                        "is_hosting": is_hosting,
+                        "is_cloud_provider": is_hosting,
+                        "is_residential": not is_hosting and not is_proxy,
+                        "is_possible_proxy": is_proxy,
+                        "is_known_tor_exit": False,
+                        "is_open_relay": False,
+                        "is_vpn_indicator": is_proxy,
+                        "network_type": net_type,
+                        "classification_notes": f"Live geolocated sending node: {net_type}.",
+                    },
+                    "confidence": 92 if is_hosting else 85,
+                    "disclaimer": "Live Real-Time Geolocation: Earliest sending node geolocated to approximate regional infrastructure.",
+                }
+    except Exception:
+        pass
+
+    # 3. Secondary online real-time fallback: ipwhois.app
+    try:
+        resp = requests.get(
+            f"https://ipwhois.app/json/{ip_str}",
+            headers={"User-Agent": "MailTraceAI-SOC-Sentinel/2.0"},
+            timeout=2.5
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("success") is True:
+                isp = data.get("isp") or "Unknown"
+                org = data.get("org") or isp
+                is_hosting = any(k in f"{isp} {org}".lower() for k in ["cloud", "hosting", "server", "data center", "datacenter", "digitalocean", "aws", "amazon", "google", "microsoft", "linode", "ovh", "hetzner"])
+                return {
+                    "earliest_reliable_ip": ip_str,
+                    "country": data.get("country") or "Unknown",
+                    "country_code": data.get("country_code") or "XX",
+                    "region": data.get("region") or "Unknown",
+                    "city": data.get("city") or "Unknown",
+                    "latitude": float(data["latitude"]) if data.get("latitude") else None,
+                    "longitude": float(data["longitude"]) if data.get("longitude") else None,
+                    "isp": isp,
+                    "asn": data.get("asn") or "Unknown",
+                    "organization": org,
+                    "infrastructure": {
+                        "is_hosting": is_hosting,
+                        "is_cloud_provider": is_hosting,
+                        "is_residential": not is_hosting,
+                        "is_possible_proxy": False,
+                        "is_known_tor_exit": False,
+                        "is_open_relay": False,
+                        "is_vpn_indicator": False,
+                        "network_type": "Hosting / Cloud VPS" if is_hosting else "ISP / Residential Broadband",
+                        "classification_notes": f"Live resolved sending node via ipwhois.",
+                    },
+                    "confidence": 88,
+                    "disclaimer": "Live Real-Time Geolocation: Earliest sending node geolocated to approximate regional infrastructure.",
+                }
+    except Exception:
+        pass
+
+    # 4. Check known offline IP database if present
+    if ip_str in KNOWN_IP_DB:
+        db = KNOWN_IP_DB[ip_str]
+        return {
+            "earliest_reliable_ip": ip_str,
+            "country": db["country"],
+            "country_code": db["country_code"],
+            "region": db["region"],
+            "city": db["city"],
+            "latitude": db["latitude"],
+            "longitude": db["longitude"],
+            "isp": db["isp"],
+            "asn": db["asn"],
+            "organization": db["organization"],
+            "infrastructure": {
+                "is_hosting": db["is_hosting"],
+                "is_cloud_provider": db["is_cloud_provider"],
+                "is_residential": db["is_residential"],
+                "is_possible_proxy": db["is_possible_proxy"],
+                "is_known_tor_exit": db["is_known_tor_exit"],
+                "is_open_relay": db["is_open_relay"],
+                "is_vpn_indicator": db["is_vpn_indicator"],
+                "network_type": db["network_type"],
+                "classification_notes": f"Infrastructure classified as {db['network_type']}.",
+            },
+            "confidence": db["confidence"],
             "disclaimer": "The earliest reliable IP is geolocated to approximate region.",
         }
 
-    # 2. Try IPGeolocation.io with API Key if configured
+    # 5. IPGeolocation.io with API Key if configured
     geo_key = os.getenv("IPGEOLOCATION_API_KEY") or os.getenv("IP_GEOLOCATION_API_KEY")
     if geo_key:
         try:
             resp = requests.get(
                 f"https://api.ipgeolocation.io/ipgeo?apiKey={geo_key}&ip={ip_str}",
-                timeout=1.5
+                timeout=2.0
             )
             if resp.status_code == 200:
                 data = resp.json()
@@ -315,46 +426,6 @@ def _cached_geolocate(ip_str: str | None) -> dict[str, Any]:
                     }
         except Exception:
             pass
-
-    # 3. Try online real-time ip-api.com lookup with fast timeout
-    try:
-        resp = requests.get(
-            f"http://ip-api.com/json/{ip_str}?fields=status,country,countryCode,regionName,city,lat,lon,isp,org,as,proxy,hosting",
-            timeout=0.8
-        )
-        if resp.status_code == 200:
-            data = resp.json()
-            if data.get("status") == "success":
-                is_hosting = bool(data.get("hosting"))
-                is_proxy = bool(data.get("proxy"))
-                net_type = "Hosting / Cloud VPS" if is_hosting else ("Proxy / VPN Relay" if is_proxy else "Broadband / Residential")
-                return {
-                    "earliest_reliable_ip": ip_str,
-                    "country": data.get("country", "Unknown"),
-                    "country_code": data.get("countryCode", "XX"),
-                    "region": data.get("regionName", "Unknown"),
-                    "city": data.get("city", "Unknown"),
-                    "latitude": data.get("lat"),
-                    "longitude": data.get("lon"),
-                    "isp": data.get("isp", "Unknown"),
-                    "asn": data.get("as", "Unknown"),
-                    "organization": data.get("org", data.get("isp", "Unknown")),
-                    "infrastructure": {
-                        "is_hosting": is_hosting,
-                        "is_cloud_provider": is_hosting,
-                        "is_residential": not is_hosting and not is_proxy,
-                        "is_possible_proxy": is_proxy,
-                        "is_known_tor_exit": False,
-                        "is_open_relay": False,
-                        "is_vpn_indicator": is_proxy,
-                        "network_type": net_type,
-                        "classification_notes": f"Observed infrastructure classified as {net_type}.",
-                    },
-                    "confidence": 85 if is_hosting else 75,
-                    "disclaimer": "The earliest reliable IP is geolocated to approximate region.",
-                }
-    except Exception:
-        pass
 
     return {
         "earliest_reliable_ip": ip_str,

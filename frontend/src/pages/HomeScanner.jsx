@@ -265,7 +265,7 @@ export default function HomeScanner() {
             </button>
           </div>
 
-          <div className="tabs" style={{ maxWidth: '440px', width: '100%' }}>
+          <div className="tabs" style={{ maxWidth: '320px', width: '100%' }}>
             <button
               onClick={() => setActiveTab('upload')}
               className={`tab ${activeTab === 'upload' ? 'active' : ''}`}
@@ -277,12 +277,6 @@ export default function HomeScanner() {
               className={`tab ${activeTab === 'paste' ? 'active' : ''}`}
             >
               📝 Raw Text
-            </button>
-            <button
-              onClick={() => setActiveTab('samples')}
-              className={`tab ${activeTab === 'samples' ? 'active' : ''}`}
-            >
-              ⚡ Scenarios ({samplesList.length})
             </button>
           </div>
         </div>
