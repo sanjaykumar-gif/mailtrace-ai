@@ -276,7 +276,72 @@ def _cached_geolocate(ip_str: str | None) -> dict[str, Any]:
             "disclaimer": "Internal private network hop extracted from local routing chain.",
         }
 
-    # 2. Try primary online real-time ip-api.com lookup
+    # 2. Priority 1: IPInfo.io Enterprise API with authenticated Token
+    ipinfo_token = os.getenv("IPINFO_TOKEN") or os.getenv("IPINFO_API_KEY") or "2f7964a9a72bdc"
+    if ipinfo_token:
+        try:
+            resp = requests.get(
+                f"https://ipinfo.io/{ip_str}/json?token={ipinfo_token}",
+                headers={"User-Agent": "MailTraceAI-SOC-Sentinel/2.0"},
+                timeout=2.5
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                loc = data.get("loc", "")
+                lat = None
+                lon = None
+                if loc and "," in loc:
+                    parts = loc.split(",")
+                    lat = float(parts[0].strip())
+                    lon = float(parts[1].strip())
+
+                org = data.get("org", "")
+                asn = "Unknown"
+                isp_name = org
+                if org and org.startswith("AS"):
+                    org_parts = org.split(" ", 1)
+                    asn = org_parts[0]
+                    isp_name = org_parts[1] if len(org_parts) > 1 else org
+
+                privacy = data.get("privacy", {})
+                is_hosting = bool(privacy.get("hosting")) or any(k in f"{org}".lower() for k in ["cloud", "hosting", "datacenter", "data center", "google", "amazon", "microsoft", "digitalocean", "ovh", "hetzner"])
+                is_vpn = bool(privacy.get("vpn"))
+                is_proxy = bool(privacy.get("proxy"))
+                is_tor = bool(privacy.get("tor"))
+                net_type = "Hosting / Cloud VPS" if is_hosting else ("Tor Exit Node" if is_tor else ("VPN Relay" if is_vpn else ("Proxy Gateway" if is_proxy else "Broadband / Residential ISP")))
+
+                return {
+                    "earliest_reliable_ip": ip_str,
+                    "country": data.get("country") or "Unknown",
+                    "country_code": data.get("country") or "XX",
+                    "region": data.get("region") or "Unknown",
+                    "city": data.get("city") or "Unknown",
+                    "latitude": lat,
+                    "longitude": lon,
+                    "isp": isp_name or "Unknown",
+                    "asn": asn,
+                    "organization": org or isp_name or "Unknown",
+                    "postal": data.get("postal"),
+                    "timezone": data.get("timezone"),
+                    "hostname": data.get("hostname"),
+                    "infrastructure": {
+                        "is_hosting": is_hosting,
+                        "is_cloud_provider": is_hosting,
+                        "is_residential": not is_hosting and not is_vpn and not is_proxy,
+                        "is_possible_proxy": is_proxy or is_vpn,
+                        "is_known_tor_exit": is_tor,
+                        "is_open_relay": False,
+                        "is_vpn_indicator": is_vpn or is_proxy or is_tor,
+                        "network_type": net_type,
+                        "classification_notes": f"High-precision IPInfo.io live intelligence: {net_type}.",
+                    },
+                    "confidence": 98 if is_hosting or is_tor or is_vpn else 95,
+                    "disclaimer": "Live High-Precision IPInfo.io Geolocation: Sending node geolocated to regional network infrastructure.",
+                }
+        except Exception:
+            pass
+
+    # 3. Priority 2: Online real-time ip-api.com lookup
     try:
         resp = requests.get(
             f"http://ip-api.com/json/{ip_str}?fields=status,message,country,countryCode,regionName,city,lat,lon,isp,org,as,proxy,hosting",
