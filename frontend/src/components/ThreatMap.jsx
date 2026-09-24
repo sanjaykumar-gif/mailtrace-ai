@@ -25,20 +25,30 @@ function riskGlow(score) {
 }
 
 const TILE_PROVIDERS = {
-  dark: {
-    name: '🗺️ Dark Carto',
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  voyager: {
+    name: '🌍 Natural Atlas (Default)',
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
     options: { subdomains: 'abcd', maxZoom: 19, attribution: '© OpenStreetMap contributors, © CARTO' }
   },
+  topo: {
+    name: '🏔️ Physical Topo',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+    options: { maxZoom: 19, attribution: 'Tiles © Esri' }
+  },
+  osm: {
+    name: '🌐 OpenStreetMap',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    options: { maxZoom: 19, attribution: '© OpenStreetMap' }
+  },
   satellite: {
-    name: '🛰️ Satellite',
+    name: '🛰️ Satellite Hybrid',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     options: { maxZoom: 18, attribution: 'Tiles © Esri' }
   },
-  osm: {
-    name: '🌐 Standard OSM',
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    options: { maxZoom: 19, attribution: '© OpenStreetMap' }
+  dark: {
+    name: '🌑 Dark Cyber',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    options: { subdomains: 'abcd', maxZoom: 19, attribution: '© CARTO' }
   }
 }
 
@@ -48,7 +58,7 @@ export default function ThreatMap({ points = [], onSelectPoint = null }) {
   const markersRef = useRef([])
   const tileLayerRef = useRef(null)
   const [mapReady, setMapReady] = useState(false)
-  const [activeTile, setActiveTile] = useState('dark')
+  const [activeTile, setActiveTile] = useState('voyager')
   const [selectedPoint, setSelectedPoint] = useState(null)
   const [hoveredPoint, setHoveredPoint] = useState(null)
 

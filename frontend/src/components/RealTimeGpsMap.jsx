@@ -84,7 +84,7 @@ export default function RealTimeGpsMap({ points = [], onSelectPoint = null, refr
         center: [20, 10], zoom: 2, minZoom: 2, maxZoom: 10,
         zoomControl: false, attributionControl: false,
       })
-      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { subdomains: "abcd", maxZoom: 19 }).addTo(map)
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", { subdomains: "abcd", maxZoom: 19, attribution: "© OpenStreetMap contributors, © CARTO" }).addTo(map)
       L.control.zoom({ position: "bottomright" }).addTo(map)
       const canvas = canvasRef.current
       if (canvas) {
