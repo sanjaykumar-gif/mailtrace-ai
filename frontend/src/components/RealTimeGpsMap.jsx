@@ -36,6 +36,7 @@ function drawArcs(map, points, canvasRef) {
   const canvas = canvasRef.current
   const ctx = canvas.getContext("2d")
   const size = map.getSize()
+  if (!size || size.x === 0 || size.y === 0) return
   canvas.width = size.x
   canvas.height = size.y
   ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -43,7 +44,10 @@ function drawArcs(map, points, canvasRef) {
   const defenderPx = map.latLngToContainerPoint([center.lat, center.lng])
   points.forEach((pt) => {
     if (pt.risk_score < 30) return
-    const srcPx = map.latLngToContainerPoint([pt.latitude, pt.longitude])
+    const lat = parseFloat(pt.latitude ?? pt.lat)
+    const lon = parseFloat(pt.longitude ?? pt.lon ?? pt.lng)
+    if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return
+    const srcPx = map.latLngToContainerPoint([lat, lon])
     const color = riskColor(pt.risk_score)
     const cx = (srcPx.x + defenderPx.x) / 2
     const cy = Math.min(srcPx.y, defenderPx.y) - Math.abs(srcPx.x - defenderPx.x) * 0.35
@@ -105,6 +109,10 @@ export default function RealTimeGpsMap({ points = [], onSelectPoint = null, refr
       markersRef.current.forEach((m) => map.removeLayer(m))
       markersRef.current = []
       mapPoints.forEach((pt) => {
+        const lat = parseFloat(pt.latitude ?? pt.lat)
+        const lon = parseFloat(pt.longitude ?? pt.lon ?? pt.lng)
+        if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return
+
         const color = riskColor(pt.risk_score)
         const glow = riskGlow(pt.risk_score)
         const size = pt.risk_score >= 80 ? 18 : pt.risk_score >= 50 ? 14 : 11
@@ -118,7 +126,7 @@ export default function RealTimeGpsMap({ points = [], onSelectPoint = null, refr
             <div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,0.85);box-shadow:0 0 ${size}px ${glow},0 0 ${size*.5}px ${color};position:relative;z-index:2;"></div>
           </div>`,
         })
-        const marker = L.marker([pt.latitude, pt.longitude], { icon })
+        const marker = L.marker([lat, lon], { icon })
         const popupHtml = `<div style="background:#0f172a;border:1px solid ${color};border-radius:10px;padding:14px 16px;font-family:monospace;color:#f8fafc;min-width:220px;box-shadow:0 0 24px ${glow};">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <span style="font-size:11px;font-weight:800;text-transform:uppercase;color:#94a3b8;">Origin Node</span>

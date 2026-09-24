@@ -1,12 +1,16 @@
 import { useState } from 'react'
 
 // Equirectangular projection coordinates helper for SVG map
-function projectLatLon(lat, lon, width = 800, height = 420) {
-  // Clamp latitude to -85 to 85
-  const clampedLat = Math.max(-85, Math.min(85, lat))
-  const x = ((lon + 180) / 360) * width
+function projectLatLon(lat, lon, width = 800, height = 400) {
+  const parsedLat = typeof lat === 'number' ? lat : parseFloat(lat)
+  const parsedLon = typeof lon === 'number' ? lon : parseFloat(lon)
+  if (isNaN(parsedLat) || isNaN(parsedLon)) {
+    return { x: width / 2, y: height / 2, valid: false }
+  }
+  const clampedLat = Math.max(-85, Math.min(85, parsedLat))
+  const x = ((parsedLon + 180) / 360) * width
   const y = ((85 - clampedLat) / 170) * height
-  return { x, y }
+  return { x, y, valid: true }
 }
 
 export default function ThreatMap({ points = [], onSelectPoint = null }) {
@@ -110,7 +114,11 @@ export default function ThreatMap({ points = [], onSelectPoint = null }) {
 
             {/* Attack Geo Nodes */}
             {mapPoints.map((pt, i) => {
-              const { x, y } = projectLatLon(pt.latitude, pt.longitude, width, height)
+              const lat = pt.latitude ?? pt.lat
+              const lon = pt.longitude ?? pt.lon ?? pt.lng
+              const { x, y, valid } = projectLatLon(lat, lon, width, height)
+              if (!valid) return null
+
               const isSelected = selected?.ip === pt.ip
               const isCrit = pt.risk_score >= 80
               const isSafe = pt.risk_score <= 20

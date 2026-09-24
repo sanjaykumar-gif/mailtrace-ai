@@ -442,31 +442,64 @@ def get_custody(evidence_id: str):
 )
 def get_geotrace_map():
     analyses = store.load_analyses()
-    points = []
-    seen_ips = set()
+    points_by_ip = {}
 
     for a in analyses:
-        gt = a.get('geotrace')
-        if gt and gt.get('latitude') and gt.get('longitude') and gt.get('earliest_reliable_ip'):
-            ip = gt['earliest_reliable_ip']
-            if ip not in seen_ips:
-                seen_ips.add(ip)
-                infra = gt.get('infrastructure', {})
-                points.append({
-                    "ip": ip,
-                    "latitude": gt['latitude'],
-                    "longitude": gt['longitude'],
-                    "country": gt.get('country', 'Unknown'),
-                    "city": gt.get('city', 'Unknown'),
-                    "isp": gt.get('isp', 'Unknown'),
-                    "hosting": gt.get('organization', 'Unknown'),
-                    "risk_score": a.get('risk_score', 0),
-                    "classification": a.get('classification', 'SAFE'),
-                    "email_count": 1,
-                    "vpn_indicator": infra.get('is_vpn_indicator') or infra.get('is_possible_proxy') or infra.get('is_known_tor_exit'),
-                    "confidence": gt.get('confidence', 75),
-                })
-    return {'points': points}
+        gt = a.get('geotrace') or {}
+        ip = gt.get('earliest_reliable_ip') or a.get('origin_ip')
+        if not ip:
+            continue
+
+        lat = gt.get('latitude')
+        lon = gt.get('longitude')
+
+        # If stored analysis didn't have coordinates or was 0, resolve on the fly
+        if lat is None or lon is None or (lat == 0 and lon == 0):
+            try:
+                resolved_gt = geolocate_ip(ip)
+                if resolved_gt.get('latitude') is not None:
+                    lat = resolved_gt.get('latitude')
+                    lon = resolved_gt.get('longitude')
+                    gt = resolved_gt
+                    a['geotrace'] = resolved_gt
+            except Exception:
+                pass
+
+        if lat is None or lon is None:
+            continue
+
+        try:
+            lat = float(lat)
+            lon = float(lon)
+        except (ValueError, TypeError):
+            continue
+
+        if ip not in points_by_ip:
+            infra = gt.get('infrastructure', {})
+            points_by_ip[ip] = {
+                "ip": ip,
+                "latitude": lat,
+                "longitude": lon,
+                "lat": lat,
+                "lon": lon,
+                "country": gt.get('country') or 'Unknown',
+                "city": gt.get('city') or 'Unknown',
+                "isp": gt.get('isp') or 'Unknown',
+                "hosting": gt.get('organization') or gt.get('isp') or 'Unknown',
+                "organization": gt.get('organization') or gt.get('isp') or 'Unknown',
+                "risk_score": a.get('risk_score', 0),
+                "classification": a.get('classification', 'SAFE'),
+                "email_count": 1,
+                "vpn_indicator": bool(infra.get('is_vpn_indicator') or infra.get('is_possible_proxy') or infra.get('is_known_tor_exit')),
+                "confidence": gt.get('confidence', 80),
+            }
+        else:
+            points_by_ip[ip]['email_count'] += 1
+            if (a.get('risk_score', 0) or 0) > points_by_ip[ip]['risk_score']:
+                points_by_ip[ip]['risk_score'] = a.get('risk_score', 0)
+                points_by_ip[ip]['classification'] = a.get('classification', 'SAFE')
+
+    return {'points': list(points_by_ip.values())}
 
 
 # ======================================================================

@@ -115,9 +115,9 @@ export const api = {
   exportReport: (id) => req(`/reports/${encodeURIComponent(id)}/export`),
 
   // Live Real-Time Mailbox Ingestion (IMAP)
-  imapConnect: (data) => req('/imap/connect', { method: 'POST', json: data }),
+  imapConnect: (data) => req('/imap/connect', { method: 'POST', json: data, timeoutMs: 60000 }),
   imapStatus: () => req('/imap/status'),
-  imapSync: () => req('/imap/sync', { method: 'POST' }),
+  imapSync: () => req('/imap/sync', { method: 'POST', timeoutMs: 60000 }),
   imapDisconnect: () => req('/imap/disconnect', { method: 'POST' }),
 
   // Live DNS & Threat Intelligence Lookups

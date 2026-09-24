@@ -94,15 +94,23 @@ class ImapWatcher:
     def _test_connection(self) -> tuple[bool, str]:
         try:
             if self.use_ssl:
-                client = imaplib.IMAP4_SSL(self.host, self.port, timeout=10)
+                client = imaplib.IMAP4_SSL(self.host, self.port, timeout=8)
             else:
-                client = imaplib.IMAP4(self.host, self.port, timeout=10)
+                client = imaplib.IMAP4(self.host, self.port, timeout=8)
             client.login(self.username, self.password)
             client.select(self.folder, readonly=True)
             client.logout()
             return True, 'Success'
+        except imaplib.IMAP4.error as exc:
+            err_msg = str(exc)
+            if 'AUTHENTICATIONFAILED' in err_msg or 'Invalid credentials' in err_msg or 'Username and Password not accepted' in err_msg:
+                return False, 'Authentication failed. If using Gmail or Yahoo, you must use an App Password (generated in your Google Account Security settings) instead of your regular account password.'
+            return False, f'IMAP protocol error: {err_msg}'
         except Exception as exc:
-            return False, str(exc)
+            err_str = str(exc)
+            if 'timed out' in err_str.lower():
+                return False, f'Connection to {self.host}:{self.port} timed out. Check server hostname and firewall settings.'
+            return False, f'Connection error: {err_str}'
 
     def stop(self):
         self.stop_event.set()
