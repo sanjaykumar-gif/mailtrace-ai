@@ -24,23 +24,21 @@ function riskGlow(score) {
   return 'rgba(34, 197, 94, 0.7)'
 }
 
-const CARTO_KEY = import.meta.env.VITE_CARTO_API_KEY || 'cb1_3wxa_1_922fc3af594394cccd613eea'
-
 const TILE_PROVIDERS = {
-  voyager: {
+  osm: {
     name: '🌍 Natural Atlas (Default)',
-    url: `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?api_key=${CARTO_KEY}`,
-    options: { subdomains: 'abcd', maxZoom: 19, attribution: '© OpenStreetMap contributors, © CARTO' }
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    options: { subdomains: 'abc', maxZoom: 19, attribution: '© OpenStreetMap contributors' }
   },
   topo: {
-    name: '🏔️ Physical Topo',
+    name: '🏔️ Esri World Topo',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
     options: { maxZoom: 19, attribution: 'Tiles © Esri' }
   },
-  osm: {
-    name: '🌐 OpenStreetMap',
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    options: { maxZoom: 19, attribution: '© OpenStreetMap' }
+  streets: {
+    name: '🛣️ Esri Streets',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    options: { maxZoom: 19, attribution: 'Tiles © Esri' }
   },
   satellite: {
     name: '🛰️ Satellite Hybrid',
@@ -48,9 +46,9 @@ const TILE_PROVIDERS = {
     options: { maxZoom: 18, attribution: 'Tiles © Esri' }
   },
   dark: {
-    name: '🌑 Dark Cyber',
-    url: `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?api_key=${CARTO_KEY}`,
-    options: { subdomains: 'abcd', maxZoom: 19, attribution: '© CARTO' }
+    name: '🌑 Dark Canvas',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    options: { maxZoom: 19, attribution: 'Tiles © Esri' }
   }
 }
 
@@ -60,7 +58,7 @@ export default function ThreatMap({ points = [], onSelectPoint = null }) {
   const markersRef = useRef([])
   const tileLayerRef = useRef(null)
   const [mapReady, setMapReady] = useState(false)
-  const [activeTile, setActiveTile] = useState('voyager')
+  const [activeTile, setActiveTile] = useState('osm')
   const [selectedPoint, setSelectedPoint] = useState(null)
   const [hoveredPoint, setHoveredPoint] = useState(null)
 
