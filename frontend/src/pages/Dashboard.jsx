@@ -58,7 +58,7 @@ export default function Dashboard() {
     setBusy('samples')
     try {
       const r = await api.loadSamples()
-      showToast(`Loaded ${r.loaded || 7} demo emails with attack correlation!`, 'success')
+      showToast(`Loaded ${r.loaded || 7} threat email scenarios with attack correlation!`, 'success')
       await load()
     } catch (e) {
       setError(e.message)
@@ -85,6 +85,8 @@ export default function Dashboard() {
 
   if (loading) return <Loading text="Loading Security Dashboard…" />
 
+  const hasData = Boolean(stats?.total && stats.total > 0)
+
   return (
     <div className="fade-in" style={{ paddingBottom: '40px' }}>
       {/* Top Banner */}
@@ -100,19 +102,19 @@ export default function Dashboard() {
               borderRadius: '999px',
               fontSize: '0.75rem',
               fontWeight: 700,
-              background: isLiveActive ? 'rgba(16, 185, 129, 0.15)' : 'var(--accent-dim)',
-              color: isLiveActive ? '#34d399' : 'var(--accent)',
-              border: `1px solid ${isLiveActive ? 'rgba(16, 185, 129, 0.3)' : 'var(--accent-glow)'}`,
+              background: isLiveActive ? 'rgba(16, 185, 129, 0.15)' : (hasData ? 'rgba(56, 189, 248, 0.15)' : 'rgba(148, 163, 184, 0.12)'),
+              color: isLiveActive ? '#34d399' : (hasData ? '#38bdf8' : 'var(--text-faint)'),
+              border: `1px solid ${isLiveActive ? 'rgba(16, 185, 129, 0.3)' : (hasData ? 'rgba(56, 189, 248, 0.3)' : 'var(--border)')}`,
             }}>
               <span style={{
                 width: 7,
                 height: 7,
                 borderRadius: '50%',
-                background: isLiveActive ? '#34d399' : 'var(--accent)',
-                boxShadow: isLiveActive ? '0 0 8px #34d399' : '0 0 8px var(--accent)',
+                background: isLiveActive ? '#34d399' : (hasData ? '#38bdf8' : '#94a3b8'),
+                boxShadow: isLiveActive ? '0 0 8px #34d399' : (hasData ? '0 0 8px #38bdf8' : 'none'),
                 display: 'inline-block'
               }} />
-              {isLiveActive ? 'LIVE INGESTION ACTIVE' : 'TELEMETRY READY'}
+              {isLiveActive ? 'LIVE INGESTION ACTIVE' : (hasData ? `TELEMETRY ARCHIVE (${stats.total} SCANS)` : 'STANDBY (NO MAILBOX CONNECTED)')}
             </span>
           </div>
           <div className="sub">
@@ -135,13 +137,115 @@ export default function Dashboard() {
             {busy === 'reset' ? 'Clearing…' : 'Clear Data'}
           </button>
           <button className="btn" onClick={loadSamples} disabled={!!busy}>
-            {busy === 'samples' ? 'Loading…' : 'Load Demo Set'}
+            {busy === 'samples' ? 'Ingesting…' : 'Ingest Threat Samples'}
           </button>
           <Link to="/" className="btn btn-primary">+ Scan Email</Link>
         </div>
       </div>
 
       <ErrorBanner error={error} onRetry={load} />
+
+      {/* Standby Workflow Banner when 0 emails exist and live monitor is inactive */}
+      {!hasData && !isLiveActive && (
+        <div className="card" style={{
+          padding: '22px 24px',
+          marginBottom: '24px',
+          background: 'radial-gradient(ellipse at top left, rgba(56, 189, 248, 0.1), var(--panel) 75%)',
+          border: '1px solid rgba(56, 189, 248, 0.25)',
+          borderRadius: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '22px' }}>🛰️</span>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: 'var(--text)' }}>
+                  SOC SENTINEL STANDBY — SELECT TELEMETRY INGRESS WORKFLOW
+                </h3>
+                <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-faint)' }}>
+                  No active telemetry in session. Connect live mailbox feeds, analyze custom emails, or ingest reference threat scenarios.
+                </p>
+              </div>
+            </div>
+            <span style={{ fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '6px', background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
+              ⚡ 3 Verification Pathways
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+            {/* Pathway 1: Live Mailbox */}
+            <div style={{
+              padding: '16px',
+              borderRadius: '10px',
+              background: 'rgba(15, 23, 42, 0.6)',
+              border: '1px solid var(--border)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '16px' }}>📬</span>
+                  <strong style={{ fontSize: '13px', color: 'var(--text)' }}>1. Live IMAP Mailbox</strong>
+                </div>
+                <p style={{ fontSize: '11.5px', color: 'var(--text-faint)', lineHeight: 1.4, margin: '0 0 12px' }}>
+                  Stream incoming emails directly from Gmail, Outlook, or corporate IMAP. Evaluates new messages in real-time.
+                </p>
+              </div>
+              <Link to="/live" className="btn" style={{ width: '100%', textAlign: 'center', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', borderColor: 'rgba(16, 185, 129, 0.3)', fontWeight: 700, fontSize: '12px' }}>
+                Connect Live Mailbox →
+              </Link>
+            </div>
+
+            {/* Pathway 2: Manual Scan */}
+            <div style={{
+              padding: '16px',
+              borderRadius: '10px',
+              background: 'rgba(15, 23, 42, 0.6)',
+              border: '1px solid var(--border)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '16px' }}>🔍</span>
+                  <strong style={{ fontSize: '13px', color: 'var(--text)' }}>2. Forensic File Scanner</strong>
+                </div>
+                <p style={{ fontSize: '11.5px', color: 'var(--text-faint)', lineHeight: 1.4, margin: '0 0 12px' }}>
+                  Drop an <code>.eml</code>, <code>.msg</code>, or paste raw headers for instant SPF/DKIM verification and URL deobfuscation.
+                </p>
+              </div>
+              <Link to="/" className="btn btn-primary" style={{ width: '100%', textAlign: 'center', fontSize: '12px' }}>
+                Scan Custom Email →
+              </Link>
+            </div>
+
+            {/* Pathway 3: Ingest Samples */}
+            <div style={{
+              padding: '16px',
+              borderRadius: '10px',
+              background: 'rgba(15, 23, 42, 0.6)',
+              border: '1px solid var(--border)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '16px' }}>⚡</span>
+                  <strong style={{ fontSize: '13px', color: 'var(--text)' }}>3. Threat Test Suite</strong>
+                </div>
+                <p style={{ fontSize: '11.5px', color: 'var(--text-faint)', lineHeight: 1.4, margin: '0 0 12px' }}>
+                  Load 7 forensic threat scenarios (Safe notice, PayPal Phish, BEC Fraud, 3-Node Campaign Cluster).
+                </p>
+              </div>
+              <button onClick={loadSamples} disabled={!!busy} className="btn" style={{ width: '100%', background: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24', borderColor: 'rgba(251, 191, 36, 0.3)', fontWeight: 700, fontSize: '12px' }}>
+                {busy === 'samples' ? 'Ingesting…' : 'Ingest Threat Samples →'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Row 1: Primary Metrics */}
       <div className="grid grid-4" style={{ marginBottom: '16px' }}>
@@ -158,7 +262,7 @@ export default function Dashboard() {
             SUSPICIOUS LINKS
           </div>
           <div style={{ fontSize: '20px', fontWeight: 900, color: '#f87171', marginTop: '4px' }}>
-            {stats?.suspicious_links ?? 12}
+            {stats?.suspicious_links ?? 0}
           </div>
           <div style={{ fontSize: '10px', color: 'var(--text-faint)', marginTop: '2px' }}>
             anchor mismatches / homoglyphs
@@ -170,7 +274,7 @@ export default function Dashboard() {
             ORIGIN TRACES
           </div>
           <div style={{ fontSize: '20px', fontWeight: 900, color: '#38bdf8', marginTop: '4px' }}>
-            {stats?.origin_traces ?? stats?.total ?? 7}
+            {stats?.origin_traces ?? stats?.total ?? 0}
           </div>
           <div style={{ fontSize: '10px', color: 'var(--text-faint)', marginTop: '2px' }}>
             geolocated sending nodes
@@ -182,7 +286,7 @@ export default function Dashboard() {
             POLICY VIOLATIONS
           </div>
           <div style={{ fontSize: '20px', fontWeight: 900, color: '#fbbf24', marginTop: '4px' }}>
-            {stats?.policy_violations ?? 8}
+            {stats?.policy_violations ?? 0}
           </div>
           <div style={{ fontSize: '10px', color: 'var(--text-faint)', marginTop: '2px' }}>
             corporate rule triggers
@@ -206,7 +310,7 @@ export default function Dashboard() {
             EVIDENCE RECORDS
           </div>
           <div style={{ fontSize: '20px', fontWeight: 900, color: '#34d399', marginTop: '4px' }}>
-            {stats?.evidence_records ?? stats?.total ?? 7}
+            {stats?.evidence_records ?? stats?.total ?? 0}
           </div>
           <div style={{ fontSize: '10px', color: 'var(--text-faint)', marginTop: '2px' }}>
             SHA-256 sealed & notarized
@@ -234,7 +338,7 @@ export default function Dashboard() {
               text="Drop an email to scan, connect your live mailbox, or load the pre-built sample test suite.">
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <Link to="/live" className="btn btn-primary">Connect Mailbox</Link>
-                <button className="btn" onClick={loadSamples} disabled={!!busy}>Load Demo Set</button>
+                <button className="btn" onClick={loadSamples} disabled={!!busy}>Ingest Threat Samples</button>
               </div>
             </Empty>
           ) : (

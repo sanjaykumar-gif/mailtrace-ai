@@ -72,7 +72,11 @@ export default function AttackDNA() {
     loadList()
     const handleDataUpdate = () => loadList()
     window.addEventListener('mailtrace_data_updated', handleDataUpdate)
-    return () => window.removeEventListener('mailtrace_data_updated', handleDataUpdate)
+    const interval = setInterval(loadList, 8000)
+    return () => {
+      window.removeEventListener('mailtrace_data_updated', handleDataUpdate)
+      clearInterval(interval)
+    }
   }, [loadList])
 
   useEffect(() => {
@@ -95,11 +99,11 @@ export default function AttackDNA() {
     navigate(`/attack-dna/${cid}`, { replace: true })
   }
 
-  const handleLoadDemoCampaign = async () => {
+  const handleLoadThreatCampaign = async () => {
     setBusy(true)
     try {
       await api.loadSamples()
-      showToast('Loaded 3-email correlated attack campaign!', 'success')
+      showToast('Ingested 3-email correlated attack campaign!', 'success')
       await loadList()
     } catch (e) {
       setError(e.message)
@@ -127,12 +131,12 @@ export default function AttackDNA() {
             📖 Attack DNA Guide
           </button>
           <button
-            onClick={handleLoadDemoCampaign}
+            onClick={handleLoadThreatCampaign}
             disabled={busy}
             className="btn"
             style={{ background: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24', borderColor: 'rgba(251, 191, 36, 0.3)', fontWeight: 700 }}
           >
-            {busy ? 'Loading Campaign…' : '⚡ Load Demo Campaign'}
+            {busy ? 'Correlating Campaign…' : '⚡ Correlate Threat Campaign'}
           </button>
           <Link to="/" className="btn btn-primary">+ Scan Email</Link>
         </div>
@@ -144,11 +148,11 @@ export default function AttackDNA() {
         <div className="card" style={{ padding: '36px', textAlign: 'center' }}>
           <Empty
             title="No campaign clusters active yet"
-            text="Campaigns appear when multiple analyzed emails share origin IPs, look-alike domain clusters, or lure patterns. Click below to load the coherent 3-email attack campaign."
+            text="Campaigns appear when multiple analyzed emails share origin IPs, look-alike domain clusters, or lure patterns. Click below to correlate the 3-email attack campaign."
           >
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '16px' }}>
-              <button onClick={handleLoadDemoCampaign} disabled={busy} className="btn btn-primary">
-                ⚡ Load Coordinated Attack Campaign (3 Emails)
+              <button onClick={handleLoadThreatCampaign} disabled={busy} className="btn btn-primary">
+                ⚡ Ingest & Correlate Coordinated Campaign (3 Emails)
               </button>
               <Link to="/" className="btn">
                 Scan Custom Email

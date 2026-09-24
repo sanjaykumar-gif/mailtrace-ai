@@ -29,10 +29,6 @@ export default function Sidebar() {
   const [imapActive, setImapActive] = useState(false)
   const [campaigns, setCampaigns] = useState(0)
   const [open, setOpen] = useState(false)
-  const [demoMode, setDemoMode] = useState(() => {
-    const saved = localStorage.getItem('mailtrace_demo_mode')
-    return saved === null ? true : saved === 'true'
-  })
   const [user, setUser] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('mailtrace_user'))
@@ -52,29 +48,13 @@ export default function Sidebar() {
         setUser(null)
       }
     }
-    const handleDemoModeChange = () => {
-      const saved = localStorage.getItem('mailtrace_demo_mode')
-      setDemoMode(saved === null ? true : saved === 'true')
-    }
     window.addEventListener('auth_change', handleAuthChange)
-    window.addEventListener('demo_mode_change', handleDemoModeChange)
     window.addEventListener('storage', handleAuthChange)
-    window.addEventListener('storage', handleDemoModeChange)
     return () => {
       window.removeEventListener('auth_change', handleAuthChange)
-      window.removeEventListener('demo_mode_change', handleDemoModeChange)
       window.removeEventListener('storage', handleAuthChange)
-      window.removeEventListener('storage', handleDemoModeChange)
     }
   }, [])
-
-  const toggleDemoMode = (e) => {
-    e.stopPropagation()
-    const next = !demoMode
-    setDemoMode(next)
-    localStorage.setItem('mailtrace_demo_mode', String(next))
-    window.dispatchEvent(new Event('demo_mode_change'))
-  }
 
   const logout = () => {
     localStorage.removeItem('mailtrace_user')
@@ -127,26 +107,6 @@ export default function Sidebar() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
-            onClick={toggleDemoMode}
-            title={demoMode ? "Demo Mode is ON: Click to switch to Live Original Prototype" : "Original Prototype is ON: Click to switch to Instant Demo Sandbox"}
-            style={{
-              padding: '3px 8px',
-              fontSize: '10px',
-              fontWeight: 800,
-              borderRadius: '20px',
-              border: demoMode ? '1px solid rgba(139, 92, 246, 0.5)' : '1px solid rgba(16, 185, 129, 0.5)',
-              background: demoMode ? 'rgba(139, 92, 246, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-              color: demoMode ? '#a78bfa' : '#34d399',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <span>{demoMode ? '🧪 DEMO' : '⚡ ORIGINAL'}</span>
-          </button>
-          <button
             onClick={toggleTheme}
             className="theme-toggle-btn"
             title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
@@ -193,35 +153,30 @@ export default function Sidebar() {
               Threat Investigation
             </div>
             
-            {/* Mode Switcher Pill */}
-            <button
-              onClick={toggleDemoMode}
-              title={demoMode ? "Demo Sandbox Active (Instant sample scans & profiles). Click to switch to Live Original Prototype." : "Live Prototype Active (Connecting to live Python backend). Click to switch to Demo Sandbox."}
+            <div
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '5px',
                 padding: '3px 8px',
                 borderRadius: '12px',
-                border: demoMode ? '1px solid rgba(139, 92, 246, 0.4)' : '1px solid rgba(16, 185, 129, 0.4)',
-                background: demoMode ? 'rgba(139, 92, 246, 0.12)' : 'rgba(16, 185, 129, 0.12)',
-                color: demoMode ? '#c4b5fd' : '#6ee7b7',
+                border: online ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
+                background: online ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                color: online ? '#6ee7b7' : '#fca5a5',
                 fontSize: '10px',
                 fontWeight: 800,
-                letterSpacing: '0.04em',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
+                letterSpacing: '0.04em'
               }}
             >
               <span style={{
                 width: 6,
                 height: 6,
                 borderRadius: '50%',
-                background: demoMode ? '#a78bfa' : '#34d399',
-                boxShadow: demoMode ? '0 0 6px #a78bfa' : '0 0 6px #34d399'
+                background: online ? '#34d399' : '#f87171',
+                boxShadow: online ? '0 0 6px #34d399' : '0 0 6px #f87171'
               }} />
-              {demoMode ? 'DEMO: ON' : 'ORIGINAL'}
-            </button>
+              {online ? 'LIVE SOC' : 'OFFLINE'}
+            </div>
           </div>
         </div>
 

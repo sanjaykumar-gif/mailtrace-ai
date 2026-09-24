@@ -16,16 +16,10 @@ export default function ThreatMap({ points = [], onSelectPoint = null }) {
   const width = 800
   const height = 400
 
-  // Default demo points if empty
-  const mapPoints = points.length > 0 ? points : [
-    { ip: '185.220.101.47', latitude: 50.1109, longitude: 8.6821, country: 'Germany', city: 'Frankfurt am Main', isp: 'Zwiebelfreunde e.V.', hosting: 'Privacy Transit', risk_score: 100, classification: 'CRITICAL', email_count: 3, vpn_indicator: true, confidence: 88 },
-    { ip: '45.155.204.33', latitude: 55.7558, longitude: 37.6173, country: 'Russia', city: 'Moscow', isp: 'Cloud Technologies', hosting: 'Cloud.ru', risk_score: 100, classification: 'CRITICAL', email_count: 1, vpn_indicator: false, confidence: 75 },
-    { ip: '103.75.190.12', latitude: 3.1408, longitude: 101.6852, country: 'Malaysia', city: 'Kuala Lumpur', isp: 'VPSMALAYSIA2', hosting: 'Gigabit Hosting', risk_score: 69, classification: 'HIGH', email_count: 1, vpn_indicator: false, confidence: 75 },
-    { ip: '91.215.85.14', latitude: 55.7558, longitude: 37.6173, country: 'Russia', city: 'Moscow', isp: 'Prospero OOO', hosting: 'Prospero Infrastructure', risk_score: 93, classification: 'CRITICAL', email_count: 1, vpn_indicator: false, confidence: 75 },
-    { ip: '209.85.128.45', latitude: 37.4225, longitude: -122.085, country: 'United States', city: 'Mountain View', isp: 'Google LLC', hosting: 'Google Enterprise', risk_score: 0, classification: 'SAFE', email_count: 1, vpn_indicator: false, confidence: 95 }
-  ]
+  // Real points or empty array
+  const mapPoints = points || []
 
-  const selected = activePoint || hoveredPoint || mapPoints[0]
+  const selected = activePoint || hoveredPoint || (mapPoints.length > 0 ? mapPoints[0] : null)
 
   return (
     <div className="threat-map-container" style={{
@@ -51,14 +45,19 @@ export default function ThreatMap({ points = [], onSelectPoint = null }) {
               THREAT ORIGIN MAP & GEOTRACE
             </h3>
             <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-faint)' }}>
-              Earliest Reliable Sending Nodes & Geolocated Threat Origins ({mapPoints.length} Active Nodes)
+              Earliest Reliable Sending Nodes & Geolocated Threat Origins ({mapPoints.length} Active {mapPoints.length === 1 ? 'Node' : 'Nodes'})
             </p>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className="badge" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', fontSize: '11px' }}>
-            ● Live Infrastructure Ingress
+          <span className="badge" style={{
+            background: mapPoints.length > 0 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(148, 163, 184, 0.12)',
+            color: mapPoints.length > 0 ? '#f87171' : 'var(--text-faint)',
+            border: `1px solid ${mapPoints.length > 0 ? 'rgba(239, 68, 68, 0.3)' : 'var(--border)'}`,
+            fontSize: '11px'
+          }}>
+            {mapPoints.length > 0 ? '● Live Infrastructure Ingress' : '⚪ Standby (0 Nodes)'}
           </span>
         </div>
       </div>
@@ -167,71 +166,106 @@ export default function ThreatMap({ points = [], onSelectPoint = null }) {
           flexDirection: 'column',
           justifyContent: 'space-between'
         }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-              <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-faint)', fontWeight: 800 }}>
-                ORIGIN NODE TELEMETRY
-              </span>
-              <span style={{
-                fontSize: '11px',
-                fontWeight: 800,
-                padding: '2px 6px',
-                borderRadius: '4px',
-                background: selected.risk_score >= 80 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)',
-                color: selected.risk_score >= 80 ? '#f87171' : '#4ade80'
+          {selected ? (
+            <>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-faint)', fontWeight: 800 }}>
+                    ORIGIN NODE TELEMETRY
+                  </span>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    background: selected.risk_score >= 80 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)',
+                    color: selected.risk_score >= 80 ? '#f87171' : '#4ade80'
+                  }}>
+                    {selected.risk_score}/100 {selected.classification}
+                  </span>
+                </div>
+
+                <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--accent)', fontFamily: 'monospace', marginBottom: '4px' }}>
+                  {selected.ip}
+                </div>
+
+                <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: 600, marginBottom: '12px' }}>
+                  📍 {selected.city ? `${selected.city}, ` : ''}{selected.country}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '4px' }}>
+                    <span style={{ color: 'var(--text-faint)' }}>ISP / Network:</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text)', textAlign: 'right', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {selected.isp || 'Unknown'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '4px' }}>
+                    <span style={{ color: 'var(--text-faint)' }}>Hosting Provider:</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text)', textAlign: 'right', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {selected.hosting || selected.organization || 'Hosting Facility'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '4px' }}>
+                    <span style={{ color: 'var(--text-faint)' }}>VPN / Tor Signal:</span>
+                    <span style={{ fontWeight: 700, color: selected.vpn_indicator ? '#f59e0b' : '#34d399' }}>
+                      {selected.vpn_indicator ? '⚠️ Possible Proxy/Tor' : '✓ Direct / Clean'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-faint)' }}>Confidence:</span>
+                    <span style={{ fontWeight: 800, color: 'var(--accent)' }}>
+                      {selected.confidence || 75}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{
+                marginTop: '14px',
+                padding: '8px',
+                borderRadius: '6px',
+                background: 'rgba(0,0,0,0.3)',
+                border: '1px solid rgba(255,255,255,0.05)',
+                fontSize: '9.5px',
+                color: 'var(--text-faint)',
+                lineHeight: 1.3
               }}>
-                {selected.risk_score}/100 {selected.classification}
-              </span>
-            </div>
-
-            <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--accent)', fontFamily: 'monospace', marginBottom: '4px' }}>
-              {selected.ip}
-            </div>
-
-            <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: 600, marginBottom: '12px' }}>
-              📍 {selected.city ? `${selected.city}, ` : ''}{selected.country}
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '4px' }}>
-                <span style={{ color: 'var(--text-faint)' }}>ISP / Network:</span>
-                <span style={{ fontWeight: 600, color: 'var(--text)', textAlign: 'right', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {selected.isp || 'Unknown'}
-                </span>
+                ⚖️ <strong>Forensic Note:</strong> Estimated infrastructure geolocation; does not establish sender physical identity.
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '4px' }}>
-                <span style={{ color: 'var(--text-faint)' }}>Hosting Provider:</span>
-                <span style={{ fontWeight: 600, color: 'var(--text)', textAlign: 'right', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {selected.hosting || selected.organization || 'Hosting Facility'}
-                </span>
+            </>
+          ) : (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              textAlign: 'center',
+              padding: '16px 8px'
+            }}>
+              <div style={{
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                background: 'rgba(56, 189, 248, 0.08)',
+                border: '1px solid rgba(56, 189, 248, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px',
+                marginBottom: '12px'
+              }}>
+                🛰️
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '4px' }}>
-                <span style={{ color: 'var(--text-faint)' }}>VPN / Tor Signal:</span>
-                <span style={{ fontWeight: 700, color: selected.vpn_indicator ? '#f59e0b' : '#34d399' }}>
-                  {selected.vpn_indicator ? '⚠️ Possible Proxy/Tor' : '✓ Direct / Clean'}
-                </span>
+              <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text)', marginBottom: '4px' }}>
+                STANDBY / 0 NODES
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-faint)' }}>Confidence:</span>
-                <span style={{ fontWeight: 800, color: 'var(--accent)' }}>
-                  {selected.confidence || 75}%
-                </span>
+              <div style={{ fontSize: '11px', color: 'var(--text-faint)', lineHeight: 1.4 }}>
+                No active sending nodes geotraced yet. Ingest an email or connect a live mailbox to map origins.
               </div>
             </div>
-          </div>
-
-          <div style={{
-            marginTop: '14px',
-            padding: '8px',
-            borderRadius: '6px',
-            background: 'rgba(0,0,0,0.3)',
-            border: '1px solid rgba(255,255,255,0.05)',
-            fontSize: '9.5px',
-            color: 'var(--text-faint)',
-            lineHeight: 1.3
-          }}>
-            ⚖️ <strong>Forensic Note:</strong> Estimated infrastructure geolocation; does not establish sender physical identity.
-          </div>
+          )}
         </div>
       </div>
     </div>

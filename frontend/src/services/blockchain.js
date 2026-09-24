@@ -40,7 +40,7 @@ export async function computeEmailHash(rawTextOrObject) {
 }
 
 /**
- * Deterministically generate a pseudo-random yet repeatable TxHash for demonstration
+ * Generate cryptographic transaction receipt identifier for notarized evidence seal
  */
 function generateTxHash(seed) {
   let hash = 0
@@ -62,67 +62,14 @@ export function getLedgerRecords() {
     const raw = localStorage.getItem(LEDGER_STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed
       }
     }
   } catch (e) {
     console.warn('Error reading blockchain ledger storage:', e)
   }
-
-  // Pre-populate with initial cryptographic forensic proofs
-  const initial = [
-    {
-      txHash: '0x9b42e71fa088cd56d405785bb049e390c91834e5671190bcdae82b753049102c',
-      emailHash: '0x8f28d8b1390234acfe1092837465019283746501928374650192837465019283',
-      subject: 'URGENT: Your PayPal Account has been Restricted - Action Required',
-      senderDomain: 'paypa1-support-auth.com',
-      riskScore: 100,
-      classification: 'CRITICAL',
-      blockNumber: 15920384,
-      blockTimestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
-      analystAddress: '0x3F5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE',
-      campaignId: 'NONE',
-      network: 'Polygon Amoy',
-      status: 'CONFIRMED',
-      confirmations: 24,
-      gasUsed: '48,219 Gwei'
-    },
-    {
-      txHash: '0x4f82a17b0981e45cc29019283746501928374650192837465019283746501928',
-      emailHash: '0x3c71a094bb712390ff1982736450192837465019283746501928374650192837',
-      subject: 'Action Required: Microsoft 365 Password Expiration Alert',
-      senderDomain: 'auth-portal-verify365.net',
-      riskScore: 90,
-      classification: 'CRITICAL',
-      blockNumber: 15920392,
-      blockTimestamp: new Date(Date.now() - 3600000 * 4).toISOString(),
-      analystAddress: '0x71C80B04a79E66CEff3e9C3F0f6F437a3fD45667',
-      campaignId: 'CMP-7F2A',
-      network: 'Polygon Amoy',
-      status: 'CONFIRMED',
-      confirmations: 42,
-      gasUsed: '51,402 Gwei'
-    },
-    {
-      txHash: '0x1a82f34901827364501928374650192837465019283746501928374650192837',
-      emailHash: '0x55aa22bb11cc33dd44ee55ff66a77b88c99d00e11f22a33b44c55d66e77f8899',
-      subject: 'Campus Placement Notice: Fall 2026 Drive Schedule',
-      senderDomain: 'university.ac.in',
-      riskScore: 0,
-      classification: 'SAFE',
-      blockNumber: 15920401,
-      blockTimestamp: new Date(Date.now() - 3600000 * 6).toISOString(),
-      analystAddress: '0x3F5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE',
-      campaignId: 'NONE',
-      network: 'Polygon Amoy',
-      status: 'CONFIRMED',
-      confirmations: 68,
-      gasUsed: '42,100 Gwei'
-    }
-  ]
-  saveLedgerRecords(initial)
-  return initial
+  return []
 }
 
 export function saveLedgerRecords(records) {

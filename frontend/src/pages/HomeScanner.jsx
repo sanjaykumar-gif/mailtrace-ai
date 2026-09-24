@@ -8,7 +8,7 @@ import MailScannerIllustration from '../components/MailScannerIllustration.jsx'
 import PageGuideModal from '../components/PageGuideModal.jsx'
 import BlockchainProofBadge from '../components/BlockchainProofBadge.jsx'
 
-const DEFAULT_DEMO_SAMPLES = [
+const REFERENCE_ATTACK_SCENARIOS = [
   { name: '1_safe_notice.eml', label: '✅ Safe Placement Notice', threat: 'SAFE', score: 0, desc: 'Legitimate college placement notice with valid SPF/DKIM' },
   { name: '2_phishing_credential.eml', label: '🎣 PayPal Credential Phishing', threat: 'CRITICAL', score: 100, desc: 'Look-alike domain, zero-width chars, and masked link' },
   { name: '3_impersonation_bec.eml', label: '💼 Executive BEC Impersonation', threat: 'HIGH', score: 75, desc: 'Executive spoofing and urgency wire-transfer request' },
@@ -28,29 +28,12 @@ export default function HomeScanner() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [pasteContent, setPasteContent] = useState('')
-  const [samplesList, setSamplesList] = useState(DEFAULT_DEMO_SAMPLES)
+  const [samplesList, setSamplesList] = useState(REFERENCE_ATTACK_SCENARIOS)
   const [showExportGuide, setShowExportGuide] = useState(false)
-  const [demoMode, setDemoMode] = useState(() => {
-    const saved = localStorage.getItem('mailtrace_demo_mode')
-    return saved === null ? true : saved === 'true'
-  })
 
   const [scanningSample, setScanningSample] = useState(null)
   const fileInput = useRef(null)
   const resultRef = useRef(null)
-
-  useEffect(() => {
-    const updateDemoMode = () => {
-      const saved = localStorage.getItem('mailtrace_demo_mode')
-      setDemoMode(saved === null ? true : saved === 'true')
-    }
-    window.addEventListener('demo_mode_change', updateDemoMode)
-    window.addEventListener('storage', updateDemoMode)
-    return () => {
-      window.removeEventListener('demo_mode_change', updateDemoMode)
-      window.removeEventListener('storage', updateDemoMode)
-    }
-  }, [])
 
   const scanStepsText = [
     'Parsing RFC-5322 MIME email headers & routing hops...',
@@ -66,19 +49,19 @@ export default function HomeScanner() {
       .then((res) => {
         if (res?.samples && res.samples.length > 0) {
           const mapped = res.samples.map((s) => {
-            const defaultMatch = DEFAULT_DEMO_SAMPLES.find((d) => d.name === s.filename)
+            const defaultMatch = REFERENCE_ATTACK_SCENARIOS.find((d) => d.name === s.filename)
             return {
               name: s.filename,
               label: defaultMatch?.label || s.filename.replace(/_/g, ' ').replace('.eml', ''),
               threat: s.filename.includes('safe') ? 'SAFE' : s.filename.includes('bec') || s.filename.includes('fraud') ? 'HIGH' : 'CRITICAL',
               score: s.filename.includes('safe') ? 0 : s.filename.includes('credential') ? 100 : 90,
-              desc: s.description || defaultMatch?.desc || 'Forensic demo test scenario'
+              desc: s.description || defaultMatch?.desc || 'Forensic threat test scenario'
             }
           })
           setSamplesList(mapped)
         }
       })
-      .catch((e) => console.log('Using local demo sample catalog fallback:', e))
+      .catch((e) => console.warn('Loading threat scenario catalog:', e))
   }, [])
 
   const validateFile = (f) => {
@@ -205,31 +188,29 @@ export default function HomeScanner() {
           Drop any suspicious email file to verify sender authenticity, trace origin server infrastructure, inspect concealed link redirects, and identify coordinated attack campaigns.
         </p>
 
-        {/* Quick Demo Sample Pills (Only when Demo Mode is ON) */}
-        {demoMode && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '1.25rem' }}>
-            <span style={{ fontSize: '12px', color: 'var(--accent)', alignSelf: 'center', fontWeight: 800 }}>
-              ⚡ Instant Demos:
-            </span>
-            {samplesList.slice(0, 4).map((s) => (
-              <button
-                key={s.name}
-                disabled={scanning}
-                onClick={() => runSampleScan(s.name)}
-                className="btn btn-sm"
-                style={{
-                  fontSize: '11.5px',
-                  borderRadius: '999px',
-                  padding: '4px 12px',
-                  background: 'var(--panel2)',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Quick Sample Scenario Pills */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '1.25rem' }}>
+          <span style={{ fontSize: '12px', color: 'var(--accent)', alignSelf: 'center', fontWeight: 800 }}>
+            ⚡ Sample Scenarios:
+          </span>
+          {samplesList.slice(0, 4).map((s) => (
+            <button
+              key={s.name}
+              disabled={scanning}
+              onClick={() => runSampleScan(s.name)}
+              className="btn btn-sm"
+              style={{
+                fontSize: '11.5px',
+                borderRadius: '999px',
+                padding: '4px 12px',
+                background: 'var(--panel2)',
+                borderColor: 'var(--border)'
+              }}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {error && (
@@ -247,32 +228,7 @@ export default function HomeScanner() {
           gap: '10px'
         }}>
           <div style={{ flex: 1, minWidth: '240px' }}>⚠️ {error}</div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {!demoMode && (error.includes('cold start') || error.includes('timed out') || error.includes('Cannot reach')) && (
-              <button
-                className="btn btn-sm"
-                onClick={() => {
-                  localStorage.setItem('mailtrace_demo_mode', 'true')
-                  window.dispatchEvent(new Event('demo_mode_change'))
-                  setError(null)
-                  showToast('Switched to Demo Sandbox Mode', 'success')
-                }}
-                style={{
-                  background: 'var(--accent)',
-                  color: '#fff',
-                  border: 'none',
-                  fontWeight: 800,
-                  fontSize: '11px',
-                  padding: '5px 12px',
-                  borderRadius: '6px',
-                  cursor: 'pointer'
-                }}
-              >
-                🧪 Switch to Instant Demo Mode
-              </button>
-            )}
-            <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
-          </div>
+          <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
         </div>
       )}
 
@@ -309,7 +265,7 @@ export default function HomeScanner() {
             </button>
           </div>
 
-          <div className="tabs" style={{ maxWidth: demoMode ? '440px' : '300px', width: '100%' }}>
+          <div className="tabs" style={{ maxWidth: '440px', width: '100%' }}>
             <button
               onClick={() => setActiveTab('upload')}
               className={`tab ${activeTab === 'upload' ? 'active' : ''}`}
@@ -322,14 +278,12 @@ export default function HomeScanner() {
             >
               📝 Raw Text
             </button>
-            {demoMode && (
-              <button
-                onClick={() => setActiveTab('samples')}
-                className={`tab ${activeTab === 'samples' ? 'active' : ''}`}
-              >
-                ⚡ Test Samples ({samplesList.length})
-              </button>
-            )}
+            <button
+              onClick={() => setActiveTab('samples')}
+              className={`tab ${activeTab === 'samples' ? 'active' : ''}`}
+            >
+              ⚡ Scenarios ({samplesList.length})
+            </button>
           </div>
         </div>
 
@@ -444,7 +398,7 @@ export default function HomeScanner() {
           </div>
         )}
 
-        {/* Tab 3: Pre-loaded Demo Test Suite */}
+        {/* Tab 3: Pre-loaded Threat Test Suite */}
         {activeTab === 'samples' && (
           <div style={{ background: 'var(--panel2)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
             <p style={{ margin: '0 0 1rem', fontSize: '13px', color: 'var(--text-muted)' }}>

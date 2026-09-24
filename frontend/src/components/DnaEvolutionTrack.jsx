@@ -1,42 +1,53 @@
-﻿import { useState } from "react"
+import { useState } from "react"
 
 function buildWaves(detail) {
   if (!detail) return []
   const members = detail.members || []
-  if (members.length < 2) {
-    // Generate mock evolution for demo
-    return [
-      {
-        wave: 1, label:"Initial Wave", date: new Date(Date.now()-7*86400000).toLocaleDateString(),
-        changed:[], persistent:["Urgency language pattern","Credential-harvesting lure","Fake brand impersonation"],
-        ip: "185.220.101.45", domain:"secure-paypa1.com", urlTheme:"login verification",
-        confidence:92, evasion:false,
-      },
-      {
-        wave: 2, label:"IP Rotation Detected", date: new Date(Date.now()-4*86400000).toLocaleDateString(),
-        changed:["Origin IP rotated","Sender domain changed","New subdomain introduced"],
-        persistent:["Urgency language pattern","Credential-harvesting lure"],
-        ip:"91.108.4.201", domain:"verify-paypa1.net", urlTheme:"account suspended",
-        confidence:86, evasion:true,
-      },
-      {
-        wave: 3, label:"Lure Theme Shift", date: new Date(Date.now()-1*86400000).toLocaleDateString(),
-        changed:["Lure theme shifted","New URL path","Display name changed"],
-        persistent:["Urgency language pattern","Reply-To harvesting technique"],
-        ip:"185.220.102.8", domain:"support-paypai.com", urlTheme:"security alert",
-        confidence:79, evasion:true,
-      },
-    ]
-  }
-  // Build from real campaign data
-  return members.map((m, i) => ({
-    wave: i+1, label:`Wave ${i+1}`, date: m.timestamp || "",
-    changed: i===0 ? [] : ["Origin IP changed","Domain rotated"],
-    persistent:["Lure pattern","Sender name format","Subject template"],
-    ip: m.origin_ip || "—", domain: m.sender?.address?.split("@")[1] || "—",
-    urlTheme: m.classification || "phishing",
-    confidence: m.risk_score || 80, evasion: i > 0,
-  }))
+  if (members.length === 0) return []
+
+  return members.map((m, i) => {
+    const prev = i > 0 ? members[i - 1] : null
+    const changed = []
+    const persistent = []
+
+    if (prev) {
+      if (m.origin_ip && prev.origin_ip && m.origin_ip !== prev.origin_ip) {
+        changed.push('Origin IP rotated')
+      } else if (m.origin_ip) {
+        persistent.push('Origin IP infrastructure')
+      }
+
+      const domain = m.sender?.address?.split('@')[1] || ''
+      const prevDomain = prev.sender?.address?.split('@')[1] || ''
+      if (domain && prevDomain && domain !== prevDomain) {
+        changed.push('Sender domain changed')
+      } else if (domain) {
+        persistent.push('Sender domain pattern')
+      }
+
+      if (m.subject && prev.subject && m.subject !== prev.subject) {
+        changed.push('Subject lure shifted')
+      } else {
+        persistent.push('Targeting lure theme')
+      }
+    } else {
+      persistent.push('Initial campaign baseline', 'Primary lure signature')
+    }
+
+    return {
+      wave: i + 1,
+      label: i === 0 ? 'Initial Ingress' : `Evolution Wave ${i + 1}`,
+      date: m.timestamp ? new Date(m.timestamp).toLocaleDateString() : 'Active',
+      changed,
+      persistent,
+      ip: m.origin_ip || '—',
+      domain: m.sender?.address?.split('@')[1] || '—',
+      urlTheme: m.classification || 'Phishing',
+      confidence: m.risk_score || 80,
+      evasion: changed.length > 0,
+      tracking_id: m.tracking_id || m.id
+    }
+  })
 }
 
 export default function DnaEvolutionTrack({ detail }) {

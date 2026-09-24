@@ -149,7 +149,7 @@ def recompute_campaigns(store) -> list[dict]:
 
     campaigns: list[dict] = []
     real_groups = [g for g in groups.values() if len(g) >= 2]
-    real_groups.sort(key=lambda g: min(analyses[i]['timestamp'] for i in g))
+    real_groups.sort(key=lambda g: min(analyses[i].get('timestamp') or '' for i in g))
 
     for num, members in enumerate(real_groups, 1):
         cid = f'CAMP-{num:03d}'

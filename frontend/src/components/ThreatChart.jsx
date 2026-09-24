@@ -1,9 +1,49 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { CLASS_COLORS } from '../services/api.js'
 
-export default function ThreatChart({ distribution }) {
-  const data = (distribution || []).filter((d) => d.value > 0)
-  if (!data.length) return null
+export default function ThreatChart({ distribution, data: propData }) {
+  const rawData = distribution || propData || []
+  const data = rawData.filter((d) => d.value > 0)
+  const total = data.reduce((acc, curr) => acc + (curr.value || 0), 0)
+
+  if (total === 0) {
+    return (
+      <div style={{
+        width: '100%',
+        height: 230,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(0, 0, 0, 0.2)',
+        borderRadius: '10px',
+        border: '1px dashed var(--border)',
+        padding: '16px'
+      }}>
+        <div style={{
+          width: 54,
+          height: 54,
+          borderRadius: '50%',
+          background: 'rgba(56, 189, 248, 0.08)',
+          border: '2px solid rgba(56, 189, 248, 0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '22px',
+          marginBottom: '10px'
+        }}>
+          📊
+        </div>
+        <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)' }}>
+          0 Threats Logged
+        </div>
+        <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '4px', textAlign: 'center' }}>
+          Standby — Awaiting email telemetry ingress
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ width: '100%', height: 230 }}>
       <ResponsiveContainer>
@@ -28,3 +68,4 @@ export default function ThreatChart({ distribution }) {
     </div>
   )
 }
+

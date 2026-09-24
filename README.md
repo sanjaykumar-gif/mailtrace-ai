@@ -24,117 +24,87 @@ Traditional email-security tools often *detect* threats but fail to explain:
 - **Which forensic indicators** caused the detection,
 - **Where** the email actually came from, and
 - **Whether multiple suspicious emails belong to the same campaign.**
+## 2. Solution & Platform Modules
 
-## 2. Solution
+MailTrace AI is an enterprise-grade cyber defense and email forensics platform offering 12 integrated security modules:
 
-MailTrace AI combines:
+| Capability | Module | Description |
+|---|---|---|
+| **Deep Forensic Scanner** | `/scan` | RFC822 parser, header validation, DKIM/SPF/DMARC auth matrix, zero-width steganography decoding |
+| **Executive SOC Dashboard** | `/dashboard` | Dynamic threat radar, real-time risk gauges, live attack cluster summary |
+| **Interactive 3D GeoTrace** | `/geotrace` | Hop-by-hop visual mail routing, ISP metadata, origin IP estimation on dark interactive globe |
+| **Attack DNA & Phylogeny** | `/dna` | Cross-email campaign clustering, shared infrastructure correlation, union-find threat tree |
+| **Incident Response Center** | `/incidents` | SOC ticket management, automated mitigation playbooks, quarantine execution |
+| **Chain of Custody Forensics**| `/forensics` | Cryptographic SHA-256 digital evidence sealing and printable compliance certificates |
+| **Blockchain Audit Ledger** | `/ledger` | Immutable notarization records anchored to the Polygon Amoy blockchain |
+| **Google Gemini Security Copilot** | Global | Conversational AI assistant for real-time natural language threat triage |
+| **Live Mailbox Sentinel** | `/live` | 24/7 background IMAP email interception and threat event streaming |
+| **Google OAuth 2.0 & RBAC** | `/auth` | Secure identity management with Google Sign-In and role-based permissions |
 
-| Capability | Description |
-|---|---|
-| Threat detection | Rule-based engine over sender identity, auth results, content, links, attachments, infrastructure |
-| Email forensics | Header parsing, SPF/DKIM/DMARC results, Received-chain route timeline, origin-IP estimation |
-| Explainable scoring | 0–100 score with a full evidence breakdown (every point justified) |
-| Explainable AI | Human-readable reasons generated strictly from detected indicators — the AI never invents evidence |
-| **Attack DNA (USP)** | Cross-email correlation on shared IP / domain / URL / reply-to / sender pattern / language → **POSSIBLE ATTACK CAMPAIGN** with confidence score |
-| Attack graph | Visual relationship graph of emails ↔ domains ↔ URLs ↔ IPs |
+---
 
-### The USP: Attack Campaign Correlation
-
-Most tools stop at "this email is phishing". MailTrace AI answers:
-*"these three emails arrived from the same server, share a fake domain and a
-URL destination, use the same role-based sender naming and the same lure
-language — this is a coordinated campaign (confidence 88%)"*.
-
-> Correlation indicates shared infrastructure or patterns between emails; it
-> does **not** independently prove common authorship. Campaign results are
-> investigative leads, not attribution.
-
-## 3. Features
-
-- Dashboard with totals (analyzed / critical / high / campaigns), threat
-  distribution donut chart and recent analyses
-- Analyze via **.eml upload** or **raw paste** (handles incomplete headers
-  gracefully)
-- Threat score bands: 0–20 SAFE · 21–40 LOW · 41–60 MEDIUM · 61–80 HIGH · 81–100 CRITICAL
-- Explanation report: numbered reasons, evidence, conclusion, recommended action
-- Forensics: sender overlay, authentication grid, network indicators, URL
-  indicators (non-clickable, never visited), attachments, obfuscation
-  findings, route timeline, raw-header viewer
-- Obfuscation detection: zero-width characters, Unicode homoglyphs, hidden
-  HTML, defanged URLs (`hxxp`, `[.]`), masked hyperlinks
-- 7 built-in demo emails, including a coherent 3-email campaign
-- Safe by design: untrusted input is never rendered as HTML, links are inert,
-  attachments are never executed, uploads are size- and type-limited, sample
-  paths are validated against traversal
-
-## 4. Architecture
+## 3. Architecture & Cloud Integrations
 
 ```
 mailtrace-ai/
-├── backend/                     FastAPI (Python)
+├── backend/                     FastAPI Python Engine
 │   ├── app/
-│   │   ├── main.py              app entry + CORS
-│   │   ├── api/routes.py        REST endpoints
-│   │   ├── analyzers/
-│   │   │   ├── email_parser.py  RFC parsing, URLs/IPs, Received chain, auth
-│   │   │   ├── threat_engine.py rule-based detectors (evidence-producing)
-│   │   │   ├── scoring.py       score bands & classification
-│   │   │   ├── explainer.py     deterministic explainability (+ optional LLM rephrase)
-│   │   │   ├── correlation.py   Attack DNA: pairwise scoring, union-find campaigns
-│   │   │   └── pipeline.py      orchestration + record building
-│   │   └── storage/store.py     local JSON store (no DB needed for MVP)
+│   │   ├── main.py              FastAPI server + CORS + lifespan
+│   │   ├── api/routes.py        REST endpoints & live telemetry
+│   │   ├── analyzers/           Forensics, header parser, threat engine, correlation
+│   │   ├── core/config.py       Typed Pydantic settings & env management
+│   │   └── storage/             Hybrid atomic store + Supabase PostgreSQL sync
+│   ├── supabase_schema.sql      Idempotent PostgreSQL schema + RLS + Realtime
+│   ├── Dockerfile               Production multi-stage container
+│   ├── Procfile                 Cloud deployment process manager
 │   └── requirements.txt
-├── frontend/                    React 18 + Vite
-│   └── src/
-│       ├── pages/               Dashboard · Analyze · Result · Forensics · AttackDNA · History
-│       ├── components/          Sidebar · ScoreGauge · ThreatChart · AuthPanel ·
-│       │                        UrlTable · RouteTimeline · CampaignGraph
-│       └── services/api.js      API service layer (loading/success/error states)
-├── sample_emails/               7 demo .eml files (safe, phishing, BEC, fraud, 3-email campaign)
+├── frontend/                    React 18 + Vite + Tailwind/Modern Glassmorphism
+│   ├── src/
+│   │   ├── pages/               12 responsive security dashboards
+│   │   ├── components/          Threat charts, GeoTrace map, DNA phylogeny, Gemini Copilot
+│   │   └── services/            API, Supabase Realtime, Blockchain & OAuth
+│   └── vercel.json              Vercel SPA routing rewrite config
 └── README.md
 ```
 
-**Tech stack:** React 18, Vite, Recharts, custom SVG graph · Python 3.13,
-FastAPI, standard-library email/parser · storage: local JSON (MVP).
+**Third-Party Integrations:**
+- **Database:** Supabase PostgreSQL Cloud DB + Realtime WebSockets
+- **Threat Intelligence:** VirusTotal API (Reputation) & AbuseIPDB API (Confidence Scoring)
+- **AI Intelligence:** Google Gemini AI Copilot
+- **Blockchain:** Polygon Amoy EVM Testnet RPC
+- **Authentication:** Google OAuth 2.0 via Supabase Auth
 
-## 5. Installation & Running
+---
 
-Prerequisites: **Python 3.10+** and **Node 18+**.
+## 4. Quick Start Guide
 
-### Backend (port 8000)
+### Prerequisites
+- **Python 3.10+**
+- **Node.js 18+**
 
+### 1. Run Backend Server
 ```bash
-cd mailtrace-ai/backend
+cd backend
 pip install -r requirements.txt
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
+*API Docs (Swagger UI): `http://127.0.0.1:8000/docs`*
 
-API docs (Swagger): http://localhost:8000/docs
-
-### Frontend (port 5173)
-
+### 2. Run Frontend Web App
 ```bash
-cd mailtrace-ai/frontend
+cd frontend
 npm install
 npm run dev
 ```
+*Web Application: `http://localhost:5173/`*
 
-Open http://localhost:5173 — the dev server proxies `/api` to the backend on
-port 8000 automatically.
+---
 
-### Production / deployment
+## 5. Cloud Deployment (100% Free Tier)
 
-- Frontend: `npm run build` → deploy `dist/` to Vercel/Netlify. Set
-  `VITE_API_BASE=https://<your-backend-host>/api` as a build-time env var.
-- Backend: deploy the FastAPI app (e.g. Render/Railway/Fly) with
-  `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
-
-### Environment variables (all optional)
-
-| Variable | Purpose |
-|---|---|
-| `VITE_API_BASE` | Frontend: backend base URL for production builds |
-| `MAILTRACE_LLM_ENDPOINT` / `MAILTRACE_LLM_KEY` | Optional external LLM used only to *rephrase* the deterministic explanation. The LLM receives only structured evidence; analysis never depends on it. Without it, a fully deterministic explanation generator is used. |
+- **Frontend:** Deploy to **Vercel** (`frontend/` root) with `VITE_API_URL` pointing to your backend.
+- **Backend:** Deploy to **Koyeb / Render / Railway** (`backend/Dockerfile`) with environment variables.
+- **Database:** Deploy schema to **Supabase** via `backend/supabase_schema.sql`.
 
 ## 6. Demo flow (SIH judging)
 

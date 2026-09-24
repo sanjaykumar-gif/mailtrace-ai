@@ -45,9 +45,16 @@ class Settings(BaseModel):
     IMAP_SSL: bool = os.getenv("IMAP_SSL", "true").lower() in ("true", "1", "yes")
     IMAP_POLL_INTERVAL: int = int(os.getenv("IMAP_POLL_INTERVAL", "15"))  # seconds
     
-    # External Threat Intelligence
-    VT_API_KEY: str = os.getenv("VT_API_KEY", "").strip()
+    # External Threat Intelligence & Reputation
+    VT_API_KEY: str = os.getenv("VT_API_KEY", "").strip() or os.getenv("VIRUSTOTAL_API_KEY", "").strip()
+    ABUSEIPDB_API_KEY: str = os.getenv("ABUSEIPDB_API_KEY", "").strip()
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "").strip()
     DNS_TIMEOUT_SECONDS: float = float(os.getenv("DNS_TIMEOUT_SECONDS", "2.5"))
+
+    # Supabase Cloud Database (PostgreSQL)
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "").strip()
+    SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "").strip()
+    SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
 
 
 # Instantiate singleton settings

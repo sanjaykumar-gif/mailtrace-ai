@@ -28,6 +28,13 @@ export default function PolicyIncidents() {
 
   useEffect(() => {
     loadData()
+    const handleUpdate = () => loadData()
+    window.addEventListener('mailtrace_data_updated', handleUpdate)
+    const interval = setInterval(loadData, 8000)
+    return () => {
+      window.removeEventListener('mailtrace_data_updated', handleUpdate)
+      clearInterval(interval)
+    }
   }, [])
 
   const handleStatusChange = async (incidentId, newStatus) => {
@@ -130,8 +137,12 @@ export default function PolicyIncidents() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '560px', overflowY: 'auto' }}>
               {incidents.length === 0 ? (
-                <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-faint)', fontSize: '12px' }}>
-                  No open security incidents.
+                <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-faint)', fontSize: '12px', lineHeight: 1.4 }}>
+                  <div style={{ fontSize: '24px', marginBottom: '8px' }}>🛡️</div>
+                  <strong style={{ color: 'var(--text)' }}>No Open Incidents</strong>
+                  <p style={{ margin: '6px 0 0', fontSize: '11.5px' }}>
+                    Incidents trigger automatically when emails evaluated by <strong>Scan Email</strong> or <strong>Live Monitor</strong> violate security policies or exceed risk thresholds.
+                  </p>
                 </div>
               ) : (
                 incidents.map(inc => {

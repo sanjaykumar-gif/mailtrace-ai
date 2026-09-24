@@ -55,7 +55,14 @@ def analyze_raw(raw: bytes, source: str = 'paste') -> dict[str, Any]:
 
     # Generate sequential unique tracking IDs
     existing_analyses = store.load_analyses()
-    seq_num = len(existing_analyses) + 1
+    highest_seq = 0
+    for a in existing_analyses:
+        tid = a.get('tracking_id', '')
+        if tid.startswith('EML-2026-'):
+            part = tid.split('-')[-1]
+            if part.isdigit():
+                highest_seq = max(highest_seq, int(part))
+    seq_num = highest_seq + 1
     tracking_id = f"EML-2026-{seq_num:03d}"
     analysis_id = uuid.uuid4().hex[:12]
     evidence_id = f"EVD-{seq_num:03d}"
@@ -291,7 +298,15 @@ def analyze_raw(raw: bytes, source: str = 'paste') -> dict[str, Any]:
 
     incident_record = None
     if score >= 60 or policy_eval.get('triggered_policies'):
-        inc_seq = len(store.load_incidents()) + 1
+        existing_incs = store.load_incidents()
+        highest_inc_seq = 0
+        for inc in existing_incs:
+            iid = inc.get('id', '')
+            if iid.startswith('INC-2026-'):
+                part = iid.split('-')[-1]
+                if part.isdigit():
+                    highest_inc_seq = max(highest_inc_seq, int(part))
+        inc_seq = highest_inc_seq + 1
         inc_id = f"INC-2026-{inc_seq:03d}"
         incident_record = {
             "id": inc_id,

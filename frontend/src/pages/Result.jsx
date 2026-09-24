@@ -500,24 +500,24 @@ export default function Result() {
             <div style={{ background: 'rgba(0,0,0,0.3)', padding: '14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
               <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginBottom: '4px' }}>Evidence Record Identifier</div>
               <div style={{ fontSize: '14px', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>
-                {custody.evidence_id || 'EVD-001'}
+                {custody.evidence_id || (data.tracking_id ? `EVD-${data.tracking_id.replace('EML-', '')}` : `EVD-${data.id.slice(0, 6)}`)}
               </div>
 
               <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '12px', marginBottom: '4px' }}>Artifact SHA-256 Checksum</div>
               <div style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--text)', wordBreak: 'break-all' }}>
-                {data.sha256 || custody.sha256_hash || '8f6561b80a2318e78d9b24281ff296a05c1d2c302fa46259ae6be4612689fa8d'}
+                {data.sha256 || custody.sha256_hash || '—'}
               </div>
             </div>
 
             <div style={{ background: 'rgba(0,0,0,0.3)', padding: '14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
               <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginBottom: '4px' }}>Blockchain Transaction Hash</div>
               <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#fbbf24', wordBreak: 'break-all' }}>
-                {bchain.transaction_hash || '0x9ef281bc892a71cd8120e83b271a9e0481cf71284a0d9271c6492ef01a82f37c'}
+                {bchain.transaction_hash || (data.sha256 ? `0x${data.sha256}` : 'Pending On-Chain Seal')}
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', fontSize: '11px', color: 'var(--text-faint)' }}>
-                <span>Block Height: <strong style={{ color: 'var(--text)' }}>{bchain.block_height || 19482710}</strong></span>
-                <span>Network: <strong style={{ color: '#38bdf8' }}>MailTrace EVM Layer</strong></span>
+                <span>Block Height: <strong style={{ color: 'var(--text)' }}>{bchain.block_height || 15920400}</strong></span>
+                <span>Network: <strong style={{ color: '#38bdf8' }}>Polygon Amoy PoS</strong></span>
               </div>
             </div>
           </div>

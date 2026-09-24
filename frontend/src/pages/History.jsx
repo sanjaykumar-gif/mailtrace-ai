@@ -28,7 +28,11 @@ export default function History() {
     load()
     const handleDataUpdate = () => load()
     window.addEventListener('mailtrace_data_updated', handleDataUpdate)
-    return () => window.removeEventListener('mailtrace_data_updated', handleDataUpdate)
+    const interval = setInterval(load, 8000)
+    return () => {
+      window.removeEventListener('mailtrace_data_updated', handleDataUpdate)
+      clearInterval(interval)
+    }
   }, [load])
 
   const remove = async (e, id) => {

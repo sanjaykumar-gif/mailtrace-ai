@@ -35,7 +35,13 @@ export default function LedgerExplorer() {
     }
     loadData()
     window.addEventListener('mailtrace_blockchain_updated', loadData)
-    return () => window.removeEventListener('mailtrace_blockchain_updated', loadData)
+    window.addEventListener('mailtrace_data_updated', loadData)
+    const interval = setInterval(loadData, 8000)
+    return () => {
+      window.removeEventListener('mailtrace_blockchain_updated', loadData)
+      window.removeEventListener('mailtrace_data_updated', loadData)
+      clearInterval(interval)
+    }
   }, [])
 
   useEffect(() => {
@@ -286,8 +292,14 @@ export default function LedgerExplorer() {
             {filteredRecords.length === 0 ? (
               <Empty
                 title="No On-Chain Records Found"
-                text={searchQuery ? 'No cryptographic proofs matched your search query.' : 'No forensic incidents have been anchored on-chain yet.'}
-              />
+                text={searchQuery ? 'No cryptographic proofs matched your search query.' : 'No forensic incidents have been anchored on-chain yet. Scan an email to generate cryptographic proof and notarize it.'}
+              >
+                {!searchQuery && (
+                  <div style={{ marginTop: '12px' }}>
+                    <Link to="/" className="btn btn-primary">Scan Email to Anchor Proof</Link>
+                  </div>
+                )}
+              </Empty>
             ) : (
               <div style={{ overflowX: 'auto' }}>
                 <table className="table" style={{ width: '100%', fontSize: '12.5px' }}>

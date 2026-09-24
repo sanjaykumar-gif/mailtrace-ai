@@ -326,7 +326,7 @@ export default function LiveMonitor() {
               boxShadow: '0 4px 14px rgba(244, 63, 94, 0.35)'
             }}
           >
-            {simulating ? 'Simulating…' : '⚡ Test Attack'}
+            {simulating ? 'Ingesting…' : '⚡ Ingest Live Attack'}
           </button>
 
           {isLive && (
@@ -565,13 +565,14 @@ export default function LiveMonitor() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.2rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
               <button
                 type="submit"
                 disabled={submitting}
                 className="btn btn-primary"
                 style={{
                   flex: 1,
+                  minWidth: '200px',
                   padding: '0.75rem',
                   borderRadius: '10px',
                   fontSize: '0.9rem',
@@ -580,6 +581,27 @@ export default function LiveMonitor() {
               >
                 {submitting ? 'Connecting...' : isLive ? 'Update Active Mailbox' : '🚀 Start Live Monitoring'}
               </button>
+              {isLive && (
+                <button
+                  type="button"
+                  onClick={handleDisconnect}
+                  disabled={submitting}
+                  className="btn"
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    color: '#f87171',
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    borderRadius: '10px',
+                    padding: '0.75rem 1.25rem',
+                    fontSize: '0.9rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  🛑 Disconnect Mailbox
+                </button>
+              )}
             </div>
           </form>
         </div>
@@ -594,11 +616,35 @@ export default function LiveMonitor() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '0.75rem' }}>
-            <div style={{ background: 'var(--panel2)', padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid var(--border)' }}>
-              <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-faint)' }}>MONITORED INBOX</div>
-              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)', wordBreak: 'break-all', marginTop: '2px' }}>
-                {status?.username || 'None configured'}
+            <div style={{ background: 'var(--panel2)', padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-faint)' }}>MONITORED INBOX</div>
+                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)', wordBreak: 'break-all', marginTop: '2px' }}>
+                  {status?.username || 'None configured'}
+                </div>
               </div>
+              {isLive && (
+                <button
+                  onClick={handleDisconnect}
+                  disabled={submitting}
+                  title="Disconnect Live Mailbox"
+                  className="btn btn-sm"
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    color: '#f87171',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    marginLeft: '8px',
+                    flexShrink: 0
+                  }}
+                >
+                  🛑 Disconnect
+                </button>
+              )}
             </div>
             <div style={{ background: 'var(--panel2)', padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid var(--border)' }}>
               <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-faint)' }}>EMAILS PROCESSED</div>
@@ -668,7 +714,7 @@ export default function LiveMonitor() {
                 ))
               ) : (
                 <div style={{ color: '#64748b', fontStyle: 'italic', padding: '16px 0', textAlign: 'center' }}>
-                  ⚡ Engine ready. Trigger "Test Attack" or connect mailbox to start live log stream.
+                  ⚡ Engine ready. Ingest threat stream or connect mailbox to start live log stream.
                 </div>
               )}
             </div>

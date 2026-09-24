@@ -135,7 +135,7 @@ const QUICK = [
   { label:"📧 Scan Email",    msg:"How do I scan an email?"     },
 ]
 
-function getDemoReply(text, path, stats, cmd) {
+function getAssistantReply(text, path, stats, cmd) {
   const t = text.toLowerCase()
   if (cmd) {
     return `→ Navigating to ${cmd.label}...\n\nI have switched your workspace to ${cmd.label}. Let me know if you would like me to analyze specific indicators on this page.`
@@ -147,12 +147,16 @@ function getDemoReply(text, path, stats, cmd) {
     return `**Email Authentication Protocols**:\n- **SPF**: Validates if sending IP is authorized by the domain owner.\n- **DKIM**: Verifies cryptographic signatures on email headers.\n- **DMARC**: Enforces alignment policies (Reject/Quarantine) when SPF/DKIM checks fail.`
   }
   if (t.includes("campaign") || t.includes("dna") || t.includes("attack")) {
-    return `**Attack DNA & Campaign Correlation** automatically links isolated phishing emails that share common origin IPs, look-alike domains, URL paths, or lure language.\n\nCurrently, MailTrace AI has correlated **${stats?.active_campaigns || 1} active campaign(s)** across ingested emails.`
+    const activeCamp = stats?.campaigns ?? stats?.active_campaigns ?? 0
+    return `**Attack DNA & Campaign Correlation** automatically links isolated phishing emails that share common origin IPs, look-alike domains, URL paths, or lure language.\n\nCurrently, MailTrace AI has correlated **${activeCamp} active campaign(s)** across ingested emails.`
   }
   if (t.includes("scan") || t.includes("upload") || t.includes("analyze")) {
     return `To analyze an email:\n1. Click **Scan Email** in the sidebar.\n2. Upload a \`.eml\` file or paste raw RFC headers.\n3. Click **ANALYZE EMAIL** for instant threat scoring and origin tracing.`
   }
-  return `APEX AI Assistant online for **${path}**.\n\n- **Total Emails Analyzed**: ${stats?.total_analyzed || 7}\n- **Critical Incidents**: ${stats?.critical_threats || 4}\n- **Active Attack Campaigns**: ${stats?.active_campaigns || 1}\n\nAsk me to navigate pages, explain threat indicators, or summarize security policies.`
+  const total = stats?.total ?? stats?.total_analyzed ?? 0
+  const crit = stats?.critical ?? stats?.critical_threats ?? 0
+  const camps = stats?.campaigns ?? stats?.active_campaigns ?? 0
+  return `APEX AI Security Assistant online for **${path}**.\n\n- **Total Emails Analyzed**: ${total}\n- **Critical Incidents**: ${crit}\n- **Active Attack Campaigns**: ${camps}\n\nAsk me to navigate pages, explain threat indicators, or summarize security policies.`
 }
 
 export default function GeminiAssistant() {
@@ -217,10 +221,10 @@ export default function GeminiAssistant() {
       try {
         reply = await callGemini(apiKey, newMsgs.slice(-10), buildSystemPrompt(location.pathname, stats))
       } catch (err) {
-        reply = getDemoReply(text, location.pathname, stats, cmd)
+        reply = getAssistantReply(text, location.pathname, stats, cmd)
       }
     } else {
-      reply = getDemoReply(text, location.pathname, stats, cmd)
+      reply = getAssistantReply(text, location.pathname, stats, cmd)
     }
 
     setMessages(prev => [...prev, { role:"assistant", content:reply || "APEX AI Assistant online.", action }])

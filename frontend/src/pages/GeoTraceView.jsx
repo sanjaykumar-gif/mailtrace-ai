@@ -22,6 +22,8 @@ export default function GeoTraceView() {
           // Fetch full detail of first item with geotrace
           const firstDetail = await api.analysis(list[0].id)
           setSelectedNode(firstDetail)
+        } else {
+          setSelectedNode(null)
         }
       } catch (err) {
         console.error('Failed to load GeoTrace telemetry:', err)
@@ -30,6 +32,13 @@ export default function GeoTraceView() {
       }
     }
     load()
+    const handleUpdate = () => load()
+    window.addEventListener('mailtrace_data_updated', handleUpdate)
+    const interval = setInterval(load, 8000)
+    return () => {
+      window.removeEventListener('mailtrace_data_updated', handleUpdate)
+      clearInterval(interval)
+    }
   }, [])
 
   const handleSelectAnalysis = async (a) => {
@@ -90,42 +99,50 @@ export default function GeoTraceView() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '420px', overflowY: 'auto' }}>
-            {analyses.map((a) => {
-              const isSelected = selectedNode?.id === a.id
-              return (
-                <div
-                  key={a.id}
-                  onClick={() => handleSelectAnalysis(a)}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    background: isSelected ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.02)',
-                    border: `1px solid ${isSelected ? '#38bdf8' : 'var(--border)'}`,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '10px', fontFamily: 'monospace', color: isSelected ? '#38bdf8' : 'var(--text-faint)', fontWeight: 800 }}>
-                      {a.tracking_id || a.id.slice(0, 8)}
-                    </span>
-                    <span style={{
-                      fontSize: '10px',
-                      fontWeight: 800,
-                      color: a.risk_score >= 80 ? '#f87171' : (a.risk_score >= 50 ? '#fbbf24' : '#4ade80')
-                    }}>
-                      {a.risk_score}/100
-                    </span>
+            {analyses.length === 0 ? (
+              <div style={{ padding: '24px 12px', textAlign: 'center', color: 'var(--text-faint)', fontSize: '11.5px', lineHeight: 1.4 }}>
+                <div style={{ fontSize: '20px', marginBottom: '8px' }}>🛰️</div>
+                <strong>Awaiting Telemetry Ingress</strong>
+                <p style={{ margin: '6px 0 12px' }}>Nodes appear automatically when you scan an email or receive live mailbox traffic.</p>
+              </div>
+            ) : (
+              analyses.map((a) => {
+                const isSelected = selectedNode?.id === a.id
+                return (
+                  <div
+                    key={a.id}
+                    onClick={() => handleSelectAnalysis(a)}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      background: isSelected ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.02)',
+                      border: `1px solid ${isSelected ? '#38bdf8' : 'var(--border)'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '10px', fontFamily: 'monospace', color: isSelected ? '#38bdf8' : 'var(--text-faint)', fontWeight: 800 }}>
+                        {a.tracking_id || a.id.slice(0, 8)}
+                      </span>
+                      <span style={{
+                        fontSize: '10px',
+                        fontWeight: 800,
+                        color: a.risk_score >= 80 ? '#f87171' : (a.risk_score >= 50 ? '#fbbf24' : '#4ade80')
+                      }}>
+                        {a.risk_score}/100
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {a.subject || '(No Subject)'}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '2px', fontFamily: 'monospace' }}>
+                      📍 {a.origin_ip || 'No IP'}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {a.subject || '(No Subject)'}
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '2px', fontFamily: 'monospace' }}>
-                    📍 {a.origin_ip || 'No IP'}
-                  </div>
-                </div>
-              )
-            })}
+                )
+              })
+            )}
           </div>
         </div>
 

@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from ..core.logging import logger
+from .supabase_client import supabase
 
 DATA_DIR = Path(__file__).resolve().parents[2] / 'data'
 ANALYSES_FILE = DATA_DIR / 'analyses.json'
@@ -112,10 +113,19 @@ class Store:
         return default
 
     def _write_json_atomic(self, path: Path, data: Any) -> None:
-        tmp = path.with_suffix('.tmp')
+        import uuid
+        tmp = path.with_name(f"{path.stem}_{uuid.uuid4().hex[:8]}.tmp")
         try:
             tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding='utf-8')
-            tmp.replace(path)
+            for _ in range(3):
+                try:
+                    tmp.replace(path)
+                    break
+                except PermissionError:
+                    import time
+                    time.sleep(0.05)
+            else:
+                tmp.replace(path)
         except Exception as exc:
             logger.error(f"[Storage] Failed to atomically persist {path.name}: {exc}")
             if tmp.exists():
@@ -150,12 +160,17 @@ class Store:
             if 'sha1' in record and record['sha1']:
                 self._sha1_index[str(record['sha1'])] = aid
             self._write_json_atomic(ANALYSES_FILE, list(self._analyses.values()))
+            if supabase.is_configured:
+                threading.Thread(target=supabase.upsert_analysis, args=(record,), daemon=True).start()
 
     def save_analyses(self, analyses: list[dict[str, Any]]) -> None:
         with self._lock:
             self._analyses = {str(a['id']): a for a in analyses if 'id' in a}
             self._sha1_index = {str(a['sha1']): str(a['id']) for a in analyses if a.get('sha1') and 'id' in a}
             self._write_json_atomic(ANALYSES_FILE, list(self._analyses.values()))
+            if supabase.is_configured:
+                for a in analyses:
+                    threading.Thread(target=supabase.upsert_analysis, args=(a,), daemon=True).start()
 
     def delete_analysis(self, analysis_id: str) -> bool:
         with self._lock:
@@ -183,7 +198,10 @@ class Store:
     def save_campaigns(self, campaigns: list[dict[str, Any]]) -> None:
         with self._lock:
             self._campaigns = {str(c['id']): c for c in campaigns if 'id' in c}
-            self._write_json_atomic(CAMPAIGN_FILE := CAMPAIGNS_FILE, list(self._campaigns.values()))
+            self._write_json_atomic(CAMPAIGNS_FILE, list(self._campaigns.values()))
+            if supabase.is_configured:
+                for c in campaigns:
+                    threading.Thread(target=supabase.upsert_campaign, args=(c,), daemon=True).start()
 
     # ======================================================================
     # Incidents CRUD
@@ -201,6 +219,8 @@ class Store:
         with self._lock:
             self._incidents[str(incident['id'])] = incident
             self._write_json_atomic(INCIDENTS_FILE, list(self._incidents.values()))
+            if supabase.is_configured:
+                threading.Thread(target=supabase.upsert_incident, args=(incident,), daemon=True).start()
 
     def update_incident(self, incident_id: str, updates: dict[str, Any]) -> dict[str, Any] | None:
         with self._lock:
@@ -211,6 +231,8 @@ class Store:
             inc["updated_at"] = datetime.now(timezone.utc).isoformat()
             self._incidents[str(incident_id)] = inc
             self._write_json_atomic(INCIDENTS_FILE, list(self._incidents.values()))
+            if supabase.is_configured:
+                threading.Thread(target=supabase.update_incident_status, args=(incident_id, updates.get("status", "INVESTIGATING")), daemon=True).start()
             return inc
 
     # ======================================================================
@@ -225,6 +247,9 @@ class Store:
         with self._lock:
             self._ledger_events.extend(events)
             self._write_json_atomic(LEDGER_FILE, self._ledger_events)
+            if supabase.is_configured:
+                for ev in events:
+                    threading.Thread(target=supabase.upsert_ledger_event, args=(ev,), daemon=True).start()
 
     def load_evidence(self) -> list[dict[str, Any]]:
         with self._lock:
@@ -238,6 +263,8 @@ class Store:
         with self._lock:
             self._evidence[str(evidence_dict['evidence_id'])] = evidence_dict
             self._write_json_atomic(EVIDENCE_FILE, list(self._evidence.values()))
+            if supabase.is_configured:
+                threading.Thread(target=supabase.upsert_evidence, args=(evidence_dict,), daemon=True).start()
 
     # ======================================================================
     # Policies & Privacy
@@ -274,6 +301,9 @@ class Store:
             self._write_json_atomic(INCIDENTS_FILE, [])
             self._write_json_atomic(LEDGER_FILE, [])
             self._write_json_atomic(EVIDENCE_FILE, [])
+            if supabase.is_configured:
+                threading.Thread(target=supabase.delete_all_analyses, daemon=True).start()
+                threading.Thread(target=supabase.delete_all_campaigns, daemon=True).start()
             logger.info("[Storage] Purged all historical records.")
 
 

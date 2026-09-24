@@ -261,7 +261,7 @@ def load_all_samples():
 def list_analyses():
     all_analyses = store.load_analyses()
     all_analyses.sort(key=lambda a: a.get('timestamp', ''), reverse=True)
-    return {'analyses': [summarize(a) for a in all_analyses]}
+    return {'count': len(all_analyses), 'analyses': [summarize(a) for a in all_analyses]}
 
 
 @router.get(
@@ -316,7 +316,7 @@ def clear_all():
 )
 def list_campaigns():
     campaigns = store.load_campaigns()
-    return {'campaigns': [campaign_detail(c) for c in campaigns]}
+    return {'count': len(campaigns), 'campaigns': [campaign_detail(c) for c in campaigns]}
 
 
 @router.get(

@@ -37,14 +37,6 @@ export function Loading({ text = 'Analyzing threats…' }) {
 export function ErrorBanner({ error, onRetry }) {
   if (!error) return null
 
-  const enableDemoMode = () => {
-    localStorage.setItem('mailtrace_demo_mode', 'true')
-    window.dispatchEvent(new Event('demo_mode_change'))
-    window.location.reload()
-  }
-
-  const isColdStart = error.includes('cold start') || error.includes('timed out') || error.includes('Cannot reach')
-
   return (
     <div className="banner banner-error" style={{
       display: 'flex',
@@ -67,28 +59,10 @@ export function ErrorBanner({ error, onRetry }) {
         borderRadius: '4px',
         fontSize: '10px'
       }}>
-        {isColdStart ? 'SERVER SLEEPING' : 'ERROR'}
+        CONNECTION ERROR
       </span>
       <div style={{ flex: 1, color: 'var(--text)', minWidth: '240px' }}>{error}</div>
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-        {isColdStart && (
-          <button
-            className="btn btn-sm"
-            onClick={enableDemoMode}
-            style={{
-              background: 'var(--accent)',
-              color: '#fff',
-              border: 'none',
-              fontWeight: 800,
-              fontSize: '11px',
-              padding: '6px 12px',
-              borderRadius: '6px',
-              cursor: 'pointer'
-            }}
-          >
-            🧪 Switch to Instant Demo Sandbox
-          </button>
-        )}
         {onRetry && (
           <button className="btn btn-sm btn-primary" onClick={onRetry}>
             🔄 Retry

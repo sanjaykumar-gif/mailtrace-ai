@@ -21,6 +21,7 @@ export default function App() {
         <Routes>
           {/* Main All-In-One Email Scanner */}
           <Route path="/" element={<HomeScanner />} />
+          <Route path="/analyze" element={<HomeScanner />} />
           <Route path="/verify" element={<HomeScanner />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/geotrace" element={<GeoTraceView />} />

@@ -29,7 +29,11 @@ export default function Forensics() {
     }
     fetchList()
     window.addEventListener('mailtrace_data_updated', fetchList)
-    return () => window.removeEventListener('mailtrace_data_updated', fetchList)
+    const interval = setInterval(fetchList, 8000)
+    return () => {
+      window.removeEventListener('mailtrace_data_updated', fetchList)
+      clearInterval(interval)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

@@ -60,19 +60,6 @@ function drawArcs(map, points, canvasRef) {
   })
 }
 
-const DEMO_POINTS = [
-  { ip: "185.220.101.47", latitude: 50.1109, longitude: 8.6821,  country: "Germany",       city: "Frankfurt",      isp: "Tor-Exit Relay",    risk_score: 100, vpn_indicator: true,  confidence: 88, email_count: 3 },
-  { ip: "45.155.204.33",  latitude: 55.7558, longitude: 37.6173, country: "Russia",         city: "Moscow",         isp: "Cloud.ru",           risk_score: 97,  vpn_indicator: false, confidence: 75, email_count: 1 },
-  { ip: "103.75.190.12",  latitude: 3.1408,  longitude: 101.685, country: "Malaysia",       city: "Kuala Lumpur",   isp: "Gigabit Hosting",    risk_score: 69,  vpn_indicator: false, confidence: 75, email_count: 2 },
-  { ip: "91.215.85.14",   latitude: 55.7558, longitude: 37.617,  country: "Russia",         city: "Moscow",         isp: "Prospero OOO",       risk_score: 93,  vpn_indicator: false, confidence: 75, email_count: 1 },
-  { ip: "209.85.128.45",  latitude: 37.4225, longitude: -122.08, country: "United States",  city: "Mountain View",  isp: "Google LLC",          risk_score: 0,   vpn_indicator: false, confidence: 95, email_count: 5 },
-  { ip: "5.188.86.172",   latitude: 59.9386, longitude: 30.3141, country: "Russia",         city: "St. Petersburg", isp: "Selectel",            risk_score: 88,  vpn_indicator: true,  confidence: 80, email_count: 2 },
-  { ip: "64.227.32.55",   latitude: 1.3521,  longitude: 103.819, country: "Singapore",      city: "Singapore",      isp: "DigitalOcean",        risk_score: 55,  vpn_indicator: true,  confidence: 70, email_count: 1 },
-  { ip: "192.241.154.40", latitude: 40.7128, longitude: -74.006, country: "United States",  city: "New York",       isp: "DigitalOcean NYC",    risk_score: 45,  vpn_indicator: false, confidence: 65, email_count: 2 },
-  { ip: "178.254.11.22",  latitude: 48.8566, longitude: 2.3522,  country: "France",         city: "Paris",          isp: "OVH SAS",             risk_score: 72,  vpn_indicator: true,  confidence: 78, email_count: 1 },
-  { ip: "104.21.44.33",   latitude: 35.6762, longitude: 139.650, country: "Japan",          city: "Tokyo",          isp: "Cloudflare Japan",    risk_score: 20,  vpn_indicator: false, confidence: 90, email_count: 4 },
-]
-
 export default function RealTimeGpsMap({ points = [], onSelectPoint = null, refreshInterval = 8000 }) {
   const mapContainerRef = useRef(null)
   const mapRef = useRef(null)
@@ -82,8 +69,8 @@ export default function RealTimeGpsMap({ points = [], onSelectPoint = null, refr
   const [lastRefresh, setLastRefresh] = useState(new Date())
   const [isLive, setIsLive] = useState(true)
   const [mapReady, setMapReady] = useState(false)
+  const mapPoints = points || []
 
-  const mapPoints = points.length > 0 ? points : DEMO_POINTS
 
   useEffect(() => {
     injectLeafletCss()
