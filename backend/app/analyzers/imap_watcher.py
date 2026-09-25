@@ -120,12 +120,11 @@ class ImapWatcher:
         self.stop_event.set()
         self.is_running = False
         self.is_connected = False
-        self.username = ''
+        prev_user = self.username
         self.password = ''
-        self.host = ''
         if self.thread and self.thread.is_alive():
             self.thread.join(timeout=3)
-        self.log_event('Mailbox watcher stopped.', 'INFO')
+        self.log_event(f'Mailbox watcher disconnected ({prev_user or "manual"}).', 'INFO')
 
     def sync_now(self) -> dict:
         """Triggers an immediate sync and returns the count of new emails fetched."""
@@ -134,17 +133,31 @@ class ImapWatcher:
         return self._fetch_and_process(limit=10, force_all=True)
 
     def _worker_loop(self):
+        # Immediate initial sync on start
+        try:
+            self._fetch_and_process(limit=10, force_all=True)
+        except Exception as e:
+            logger.warning(f'Initial sync warning: {e}')
+
         while not self.stop_event.is_set():
+            self.stop_event.wait(self.poll_interval)
+            if self.stop_event.is_set():
+                break
             try:
                 self._fetch_and_process(limit=5)
             except Exception as exc:
                 self.last_error = str(exc)
-                self.log_event(f'Polling error: {exc}', 'WARNING')
-            self.stop_event.wait(self.poll_interval)
+                self.log_event(f'Polling warning: {exc}', 'WARNING')
 
     def _fetch_and_process(self, limit: int = 5, force_all: bool = False) -> dict:
+        if not self.is_running and not force_all:
+            return {'success': False, 'message': 'Watcher is stopped.'}
+
         pwd = (self.password or '').replace(' ', '').strip()
         user = (self.username or '').strip()
+        if not user or not pwd:
+            return {'success': False, 'message': 'No credentials configured.'}
+
         try:
             if self.use_ssl:
                 client = imaplib.IMAP4_SSL(self.host, self.port, timeout=25)
@@ -164,6 +177,7 @@ class ImapWatcher:
             if res != 'OK' or not data or not data[0]:
                 client.logout()
                 self.last_sync_time = datetime.now(timezone.utc).isoformat()
+                self.is_connected = True
                 return {'success': True, 'count': 0, 'message': 'No matching messages found in mailbox.'}
 
             msg_ids = data[0].split()
@@ -200,9 +214,8 @@ class ImapWatcher:
 
             return {'success': True, 'count': new_analyzed, 'message': f'Synced {new_analyzed} email(s).'}
         except Exception as exc:
-            self.is_connected = False
             self.last_error = str(exc)
-            self.log_event(f'Sync failure: {exc}', 'ERROR')
+            self.log_event(f'Sync notice: {exc}', 'WARNING')
             return {'success': False, 'message': str(exc)}
 
     def get_status(self) -> dict:

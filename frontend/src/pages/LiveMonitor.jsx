@@ -168,19 +168,28 @@ export default function LiveMonitor() {
     e.preventDefault()
     setSubmitting(true)
     setError(null)
+    const cleanUser = (username || '').trim()
+    const cleanPass = (password || '').replace(/\s+/g, '')
+    if (!cleanUser || !cleanPass) {
+      setError('Please provide both account email and 16-character App Password.')
+      setSubmitting(false)
+      return
+    }
     try {
       const res = await api.imapConnect({
         host,
         port: parseInt(port, 10),
-        username,
-        password: password.replace(/\s+/g, ''), // Strip any accidental spaces from copy-paste
+        username: cleanUser,
+        password: cleanPass,
         use_ssl: true,
         folder,
         poll_interval: parseInt(pollInterval, 10),
         only_unread: onlyUnread,
       })
       showToast(res.message || 'Connected to live mailbox!', 'success')
-      fetchStatus()
+      if (res.status) setStatus(res.status)
+      window.dispatchEvent(new Event('mailtrace_data_updated'))
+      await fetchStatus()
     } catch (err) {
       setError(err.message)
       showToast(err.message || 'Connection failed', 'error')
@@ -193,9 +202,11 @@ export default function LiveMonitor() {
     setSubmitting(true)
     setError(null)
     try {
-      await api.imapDisconnect()
+      const res = await api.imapDisconnect()
       showToast('Live monitoring disconnected successfully.', 'info')
-      fetchStatus()
+      if (res.status) setStatus(res.status)
+      window.dispatchEvent(new Event('mailtrace_data_updated'))
+      await fetchStatus()
     } catch (err) {
       setError(err.message)
       showToast(err.message, 'error')
@@ -210,7 +221,8 @@ export default function LiveMonitor() {
     try {
       const res = await api.imapSync()
       showToast(`Sync complete: ${res.count || 0} new emails processed.`, 'success')
-      fetchStatus()
+      window.dispatchEvent(new Event('mailtrace_data_updated'))
+      await fetchStatus()
     } catch (err) {
       setError(err.message)
       showToast(err.message, 'error')
