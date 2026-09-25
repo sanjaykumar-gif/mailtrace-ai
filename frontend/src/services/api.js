@@ -12,7 +12,7 @@ export class ApiError extends Error {
   }
 }
 
-async function req(path, { method = 'GET', json, form, timeoutMs = 25000 } = {}) {
+async function req(path, { method = 'GET', json, form, timeoutMs = 30000 } = {}) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   const opts = { method, headers: {}, signal: controller.signal }
