@@ -72,9 +72,11 @@ app.add_middleware(
 )
 
 
-# Correlation ID & Security Headers Middleware
 @app.middleware("http")
 async def request_context_middleware(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
     req_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
     start_time = time.perf_counter()
     
