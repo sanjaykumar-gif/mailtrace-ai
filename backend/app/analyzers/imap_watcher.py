@@ -131,7 +131,7 @@ class ImapWatcher:
         """Triggers an immediate sync and returns the count of new emails fetched."""
         if not self.host or not self.username:
             return {'success': False, 'message': 'IMAP watcher is not configured.'}
-        return self._fetch_and_process(limit=10)
+        return self._fetch_and_process(limit=10, force_all=True)
 
     def _worker_loop(self):
         while not self.stop_event.is_set():
@@ -142,7 +142,7 @@ class ImapWatcher:
                 self.log_event(f'Polling error: {exc}', 'WARNING')
             self.stop_event.wait(self.poll_interval)
 
-    def _fetch_and_process(self, limit: int = 5) -> dict:
+    def _fetch_and_process(self, limit: int = 5, force_all: bool = False) -> dict:
         pwd = (self.password or '').replace(' ', '').strip()
         user = (self.username or '').strip()
         try:
@@ -154,12 +154,17 @@ class ImapWatcher:
             client.login(user, pwd)
             client.select(self.folder, readonly=False)
 
-            search_criteria = 'UNSEEN' if self.only_unread else 'ALL'
+            # Check UNSEEN first, if none found fallback to recent ALL emails
+            search_criteria = 'ALL' if (force_all or not self.only_unread) else 'UNSEEN'
             res, data = client.search(None, search_criteria)
+            
+            if (res != 'OK' or not data or not data[0]) and search_criteria == 'UNSEEN':
+                res, data = client.search(None, 'ALL')
+
             if res != 'OK' or not data or not data[0]:
                 client.logout()
                 self.last_sync_time = datetime.now(timezone.utc).isoformat()
-                return {'success': True, 'count': 0, 'message': 'No matching messages found.'}
+                return {'success': True, 'count': 0, 'message': 'No matching messages found in mailbox.'}
 
             msg_ids = data[0].split()
             # process the newest messages first
@@ -191,9 +196,9 @@ class ImapWatcher:
             self.last_sync_time = datetime.now(timezone.utc).isoformat()
             self.is_connected = True
             if new_analyzed > 0:
-                self.log_event(f'Fetched and analyzed {new_analyzed} new live email(s).', 'SUCCESS')
+                self.log_event(f'Fetched and analyzed {new_analyzed} live email(s) from {self.folder}.', 'SUCCESS')
 
-            return {'success': True, 'count': new_analyzed, 'message': f'Synced {new_analyzed} new email(s).'}
+            return {'success': True, 'count': new_analyzed, 'message': f'Synced {new_analyzed} email(s).'}
         except Exception as exc:
             self.is_connected = False
             self.last_error = str(exc)
