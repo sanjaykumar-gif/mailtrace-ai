@@ -1,7 +1,8 @@
 // Enterprise API Client for MailTrace AI Production Prototype
 // PS 26106 Live Threat Detection, Forensics, Attack DNA, and Ingestion
 
-const BASE = (import.meta.env.VITE_API_BASE || '/api').replace(/\/$/, '')
+const rawBase = import.meta.env.VITE_API_BASE || (import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api` : '/api')
+const BASE = rawBase.replace(/\/$/, '')
 
 export class ApiError extends Error {
   constructor(message, status = 500) {
