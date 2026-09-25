@@ -115,6 +115,18 @@ def imap_disconnect():
     return {'success': True, 'message': 'IMAP watcher disconnected cleanly.', 'status': imap_watcher.get_status()}
 
 
+@router.post(
+    '/imap/sync',
+    tags=["Live Ingestion"],
+    summary="Trigger immediate mailbox synchronization"
+)
+def imap_sync():
+    res = imap_watcher.sync_now()
+    if not res.get('success'):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=res.get('message', 'Sync failed.'))
+    return res
+
+
 # ======================================================================
 # Core Analysis Endpoints
 # ======================================================================
