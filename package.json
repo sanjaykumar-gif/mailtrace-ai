@@ -1,0 +1,13 @@
+{
+  "name": "mailtrace-ai-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MailTrace AI - Render keep-alive and orchestration scripts",
+  "scripts": {
+    "keep-alive": "node render-keep-alive.js",
+    "keep-alive:once": "node render-keep-alive.js --once"
+  },
+  "keywords": ["mailtrace", "render", "keep-alive"],
+  "author": "",
+  "license": "MIT"
+}

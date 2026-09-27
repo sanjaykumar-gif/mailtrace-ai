@@ -1,0 +1,25 @@
+name: Render 24/7 Keep-Alive
+
+on:
+  schedule:
+    # Runs every 14 minutes (Render spins down after 15 minutes of inactivity)
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Ping Render Backend to Prevent Cold Start
+        env:
+          RENDER_URL: 'https://mailtrace-ai-1-ml0g.onrender.com/api/health'
+        run: |
+          node render-keep-alive.js --once
